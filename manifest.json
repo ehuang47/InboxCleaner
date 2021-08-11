@@ -1,6 +1,6 @@
 {
   "name": "GManager", 
-  "description": "Keeps the emails that spark joy.",
+  "description": "Easily mass-delete or unsubscribe from undesired emails.",
   "version": "1.0", 
 
   "manifest_version": 2,
