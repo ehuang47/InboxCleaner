@@ -1,14 +1,32 @@
 console.log("Background script is running");
 
-chrome.runtime.onInstalled.addListener(buttonClicked);
+// when extension is installed, updated, or chrome is updated
+chrome.runtime.onInstalled.addListener((details) => {
+  // gets previous extension version, reason "oninstalled" activated, and maybe ID
+  console.log("Triggered onInstalled due to: " + details.reason);
+});
 
-function buttonClicked(tab) {
-  console.log("a button was clicked");
-  console.log(tab);
+// when active tab in the window changes
+/*
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  // gets tab and window ID
+  let msg = { txt: "hello" };
+  chrome.tabs.sendMessage(activeInfo.tabId, msg, (response) => {
+    console.log("Printing response: \n", response);
+  }); // only tabs.sendMessage can go to content scripts
+});
+*/
 
-  let msg = {txt: "hello!"}
-  chrome.tabs.sendMessage(tab.id, msg);
-}
+chrome.runtime.onConnect.addListener((port) => {
+  console.log("connected to port: \n", port);
+  if (port.name === "content") {
+    port.postMessage({ text: "hello" });
+    port.onMessage.addListener((msg, resPort) => {
+      console.log("received msg: \n", msg);
+    });
+  }
+});
+
 
 /*
 * surface level event listener
