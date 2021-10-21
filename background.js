@@ -2,8 +2,8 @@ console.log("Background script is running");
 
 // when extension is installed, updated, or chrome is updated
 chrome.runtime.onInstalled.addListener((details) => {
-  // gets previous extension version, reason "oninstalled" activated, and maybe ID
-  console.log("Triggered onInstalled due to: " + details.reason);
+	// gets previous extension version, reason "oninstalled" activated, and maybe ID
+	console.log("Triggered onInstalled due to: " + details.reason);
 });
 
 // when active tab in the window changes
@@ -17,16 +17,34 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 });
 */
 
+// listen for content script port connection
 chrome.runtime.onConnect.addListener((port) => {
-  console.log("connected to port: \n", port);
-  if (port.name === "content") {
-    port.postMessage({ text: "hello" });
-    port.onMessage.addListener((msg, resPort) => {
-      console.log("received msg: \n", msg);
-    });
-  }
+	console.log("connected to port: \n", port);
+	if (port.name === "content") {
+		port.postMessage({ text: "hello" });
+		port.onMessage.addListener((msg, resPort) => {
+			console.log("received msg: \n", msg);
+		});
+		// gets rid of listeners when disconnected?
+		port.onDisconnect.addListener(() => {
+			port = null; // same as port.onDisconnect.removeListener()
+		});
+	}
 });
 
+// listen for when the browser button is clicked
+chrome.action.onClicked.addListener((tab) => {
+	// Send a message to the active tab
+	chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+		var activeTab = tabs[0];
+		// upon response with active tab URL, create a duplicate tab
+		chrome.tabs.sendMessage(activeTab.id, { message: "clicked_browser_action" }, (response) => {
+			if (response.message === "open_new_tab") {
+				chrome.tabs.create({ url: response.url });
+			}
+		});
+	});
+});
 
 /*
 * surface level event listener

@@ -5,7 +5,7 @@
   "version": "1.0", 
   "content_scripts":[{
     "matches":["https://mail.google.com/*", "https://inbox.google.com/*"],
-    "js":["js/content.js"]
+    "js":["js/jquery-3.1.1.min.js", "js/content.js"]
   }],
  
   "background":{
@@ -13,7 +13,8 @@
   },
 
   "action": {
-    "default_title": "G-Manager"
+    "default_title": "G-Manager",
+    "default_popup": "index.html"
   },
   
   "icons":{
@@ -22,7 +23,8 @@
 
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
   ],
 
   "host_permissions": [
