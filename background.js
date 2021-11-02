@@ -4,6 +4,25 @@ console.log("Background script is running");
 chrome.runtime.onInstalled.addListener((details) => {
 	// gets previous extension version, reason "oninstalled" activated, and maybe ID
 	console.log("Triggered onInstalled due to: " + details.reason);
+
+	// set stored color for changing background
+	chrome.storage.sync.set({ color: "#3aa757" }, function () {
+		console.log("The color is green.");
+	});
+
+	// setting rules for page actions & taking action when accessing a page that meets all criteria
+	chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
+		chrome.declarativeContent.onPageChanged.addRules([
+			{
+				conditions: [
+					new chrome.declarativeContent.PageStateMatcher({
+						pageUrl: { hostContains: ".google.com", schemes: ["https"] },
+					}),
+				],
+				actions: [new chrome.declarativeContent.ShowPageAction()],
+			},
+		]);
+	});
 });
 
 // listen for content script port connection
@@ -37,6 +56,7 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 /* listen for when the browser button is clicked
+! chrome.browserAction or pageAction
 chrome.action.onClicked.addListener((tab) => {
 	// Send a message to the active tab
 	chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {

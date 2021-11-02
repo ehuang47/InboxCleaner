@@ -7,16 +7,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Getting Started building chrome Extensions</title>
-
+  <style>
+    button {
+      height: 40px;
+      width: 80px;
+      outline: none;
+    }
+  </style>
   <!-- Bootstrap -->
   <!-- <link href="css/bootstrap.min.css" rel="stylesheet"> -->
-  <!-- <link href="css/custom.css" rel="stylesheet"> -->\
+  <!-- <link href="css/custom.css" rel="stylesheet"> -->
 
 </head>
 
 <body>
-  <input id="colour-input" type="text" />
+  <button id="changeColor"></button>
+  <input id="colour-input" type="text">
   <button id="colour-submit-btn">Apply</button>
+  <br>
   <button id="open-browser-btn">Duplicate Browser</button>
   <script src="js/popup.js"></script>
 </body>

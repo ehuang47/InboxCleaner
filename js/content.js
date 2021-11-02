@@ -35,7 +35,7 @@ InboxSDK.load(2, 'sdk_gmanager_284293dc99').then(function(sdk){
 
 // make it load what is stored
 chrome.storage.local.get("colour", (response) => {
-	if (response.colour) document.body.style.backgroundColor = response.colour;
+	// if (response.colour) document.body.style.backgroundColor = response.colour;
 });
 
 // perhaps this will generate port array if multiple listeners

@@ -5,6 +5,22 @@ port.onMessage.addListener((msg, resPort) => {
 	if (msg.text === "hello") resPort.postMessage({ text: "hello, i am popup" });
 });
 
+let changeColor = document.getElementById("changeColor");
+
+chrome.storage.sync.get("color", function (data) {
+	changeColor.style.backgroundColor = data.color;
+	changeColor.setAttribute("value", data.color);
+});
+
+changeColor.addEventListener("click", (element) => {
+	let color = element.target.value;
+	chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+		chrome.tabs.executeScript(tabs[0].id, {
+			code: 'document.body.style.backgroundColor = "' + color + '";',
+		});
+	});
+});
+
 document.querySelector("#colour-submit-btn").addEventListener("click", () => {
 	// read the colour that the user has selected
 	const colour = document.querySelector("#colour-input").value;
