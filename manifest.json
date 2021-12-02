@@ -5,7 +5,7 @@
   "version": "1.0", 
   "content_scripts":[{
     "matches": ["https://*.google.com/*"],
-    "js":["js/jquery-3.1.1.min.js", "js/content.js"]
+    "js":["js/inboxsdk.js", "js/jquery-3.1.1.min.js", "js/content.js"]
   }],
   "background":{
     "persistent": false,
@@ -16,10 +16,7 @@
     "default_popup": "popup.html"
   },
   "icons":{
-    "16": "images/get_started16.png",
-    "32": "images/get_started32.png",
-    "48": "images/get_started48.png",
-    "128": "images/get_started128.png"
+    "128": "images/gman.png"
   },
   "permissions": [
     "activeTab",
