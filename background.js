@@ -56,36 +56,28 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 //* Gmail API OAuth2 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// make sure to have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
+chrome.identity.getAuthToken({ interactive: true }, (token) => {
+	// retrieves an OAuth2 access token for making http request to API functions, then load Google's javascript client libraries... does identity auto-remove invalid cached tokens?
 
-chrome.identity.getAuthToken({ interactive: true }, function () {
-	//load Google's javascript client libraries
-	window.gapi_onload = authorize;
-	loadScript("https://apis.google.com/js/client.js");
-});
+	/* https://stackoverflow.com/questions/18681803/loading-google-api-javascript-client-library-into-chrome-extension
+  gapi-client script defines a window["gapi_onload"] as the callback function for after it finishes loading, so it must be defined before making the script request
+  not sure why gapi.auth is called to authorizer a new token, when chrome.identity should've done so already. i believe we can go straight to gapi client load
+  */
+	window.gapi_onload = () => {
+		gapi.client.load("gmail", "v1", gmailAPILoaded);
+	};
 
-function loadScript(url) {
+	// make http request to load the API client script
 	var request = new XMLHttpRequest();
 	request.onreadystatechange = function () {
 		if (request.readyState !== 4 || request.status !== 200) return;
 		eval(request.responseText);
 	};
 
-	request.open("GET", url);
+	request.open("GET", "https://apis.google.com/js/client.js");
 	request.send();
-}
-
-function authorize() {
-	gapi.auth.authorize(
-		{
-			client_id: "142584390652-vomcgmkmgsh6v92j9i8c4eg74pil19sd.apps.googleusercontent.com",
-			immediate: true,
-			scope: "https://www.googleapis.com/auth/gmail.modify",
-		},
-		function () {
-			gapi.client.load("gmail", "v1", gmailAPILoaded);
-		}
-	);
-}
+});
 
 function gmailAPILoaded() {
 	//do stuff here
