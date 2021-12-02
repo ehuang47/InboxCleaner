@@ -55,6 +55,84 @@ chrome.runtime.onConnect.addListener((port) => {
 	}
 });
 
+//* Gmail API OAuth2 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+chrome.identity.getAuthToken({ interactive: true }, function () {
+	//load Google's javascript client libraries
+	window.gapi_onload = authorize;
+	loadScript("https://apis.google.com/js/client.js");
+});
+
+function loadScript(url) {
+	var request = new XMLHttpRequest();
+	request.onreadystatechange = function () {
+		if (request.readyState !== 4 || request.status !== 200) return;
+		eval(request.responseText);
+	};
+
+	request.open("GET", url);
+	request.send();
+}
+
+function authorize() {
+	gapi.auth.authorize(
+		{
+			client_id: "142584390652-vomcgmkmgsh6v92j9i8c4eg74pil19sd.apps.googleusercontent.com",
+			immediate: true,
+			scope: "https://www.googleapis.com/auth/gmail.modify",
+		},
+		function () {
+			gapi.client.load("gmail", "v1", gmailAPILoaded);
+		}
+	);
+}
+
+function gmailAPILoaded() {
+	//do stuff here
+}
+
+/* here are some utility functions for making common gmail requests */
+function getThreads(query, labels) {
+	return gapi.client.gmail.users.threads.list({
+		userId: "me",
+		q: query, //optional query
+		labelIds: labels, //optional labels
+	}); //returns a promise
+}
+
+//takes in an array of threads from the getThreads response
+function getThreadDetails(threads) {
+	var batch = new gapi.client.newBatch();
+
+	for (var ii = 0; ii < threads.length; ii++) {
+		batch.add(
+			gapi.client.gmail.users.threads.get({
+				userId: "me",
+				id: threads[ii].id,
+			})
+		);
+	}
+
+	return batch;
+}
+
+function getThreadHTML(threadDetails) {
+	var body = threadDetails.result.messages[0].payload.parts[1].body.data;
+	return B64.decode(body);
+}
+
+function archiveThread(id) {
+	var request = gapi.client.request({
+		path: "/gmail/v1/users/me/threads/" + id + "/modify",
+		method: "POST",
+		body: {
+			removeLabelIds: ["INBOX"],
+		},
+	});
+
+	request.execute();
+}
+
 /* listen for when the browser button is clicked
 ! chrome.browserAction or pageAction
 chrome.action.onClicked.addListener((tab) => {
@@ -71,24 +149,7 @@ chrome.action.onClicked.addListener((tab) => {
 });
 */
 
-// when active tab in the window changes
-/*
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  // gets tab and window ID
-  let msg = { txt: "hello" };
-  chrome.tabs.sendMessage(activeInfo.tabId, msg, (response) => {
-    console.log("Printing response: \n", response);
-  }); // only tabs.sendMessage can go to content scripts
-});
-*/
-
-/*
-* surface level event listener
-chrome.runtime.onStartup.addListener(function() {
-  // run startup function
-})
-
-* storage API get/set 
+/* storage API get/set 
 chrome.storage.local.set({ variable: variableInformation });
 chrome.storage.local.get(['variable'], function(result) {
   let awesomeVariable = result.variable;

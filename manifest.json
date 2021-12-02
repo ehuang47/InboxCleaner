@@ -11,6 +11,11 @@
     "persistent": false,
     "scripts": ["background.js"]
   },
+  "content_security_policy": "script-src 'self' https://apis.google.com 'unsafe-eval'; object-src 'self'",
+  "oauth2": {
+    "client_id": "142584390652-vomcgmkmgsh6v92j9i8c4eg74pil19sd.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/gmail.modify"]
+  },
   "page_action":{
     "default_title": "G-Manager",
     "default_popup": "popup.html"
@@ -21,6 +26,7 @@
   "permissions": [
     "activeTab",
     "storage",
+    "identity",
     "declarativeContent",
     "https://mail.google.com/*",
     "https://inbox.google.com/*"
