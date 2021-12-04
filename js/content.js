@@ -41,7 +41,7 @@ lists for modifying/reading the lists ?
 		var collap_section = ListRouteView.addCollapsibleSection({
 			title: "Subscriptions",
 			subtitle:
-				"To unsubscribe from an email address, click on the respective row. It will navigate you to a new tab where you can fill out the request to unsubscribe. If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, first copy and paste their email address into the search bar and hit enter. Check the box to select all emails, then select the option to 'Select all conversations that match this search'. Now that you've selected all of their emails, click the trashbin 'Delete' icon to delete them." +
+				// "To unsubscribe from an email address, click on the respective row. It will navigate you to a new tab where you can fill out the request to unsubscribe. If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, first copy and paste their email address into the search bar and hit enter. Check the box to select all emails, then select the option to 'Select all conversations that match this search'. Now that you've selected all of their emails, click the trashbin 'Delete' icon to delete them." +
 				last_synced,
 			titleLinkText: "Sync Now",
 			onTitleLinkClick: () => {
@@ -65,7 +65,7 @@ lists for modifying/reading the lists ?
 	});
 
 	sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
-		// TODO: check the contacts (emailAddress and name) to see if they appear in the chrome.storage subscriber list. if so, then add the "Subscribed" label
+		// TODO: check the contacts (emailAddress and name) to see if they appear in the chrome.storage subscriber list and that label isnt set. if so, then add the "Subscribed" label
 		var contact = ThreadRowView.getContacts()[0];
 		console.log(contact.emailAddress, contact.name);
 		let subscribed = false;

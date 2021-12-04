@@ -1,5 +1,3 @@
-console.log("Background script is running");
-
 // when extension is installed, updated, or chrome is updated
 chrome.runtime.onInstalled.addListener((details) => {
 	// gets previous extension version, reason "oninstalled" activated, and maybe ID
@@ -48,7 +46,34 @@ chrome.runtime.onConnect.addListener((port) => {
 					console.log("syncing now");
 					// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
 					// TODO: set rowdescriptor title to name + emailaddress, body to timestamp + email subject, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
-					port.postMessage({ message: "updated_subscribers" });
+					// port.postMessage({ message: "updated_subscribers" });
+					gapi.client.gmail.users.threads
+						.list({
+							userId: "me",
+							maxResults: 5,
+						})
+						.then((threadDetails) => {
+							// var thread_list = threadDetails.threads;
+							console.log(threadDetails.result);
+							let thread_list = threadDetails.result.threads;
+							for (i in thread_list) {
+								// must use threads.get to get a thread object
+								let thread_id = thread_list[i].id;
+								console.log(thread_list[i]);
+								gapi.client.gmail.users.threads
+									.get({
+										userId: "me",
+										id: thread_id,
+									})
+									.then((res) => {
+										console.log("Getting thread" + thread_id + ":\n", res);
+										let first_message = res.result.messages[0];
+										let date = first_message.internalDate,
+											payload = first_message.payload;
+										console.log(date, payload.mimeType, payload.body, payload.parts);
+									});
+							}
+						});
 				}
 			}
 		});
@@ -83,6 +108,7 @@ chrome.identity.getAuthToken({ interactive: true }, (token) => {
 	window.gapi_onload = () => {
 		gapi.client.load("gmail", "v1", () => {
 			gapi_loaded = true;
+			gapi.client.setToken({ access_token: token });
 		});
 	};
 
