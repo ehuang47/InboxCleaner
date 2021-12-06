@@ -23,6 +23,45 @@ chrome.runtime.onInstalled.addListener((details) => {
 	});
 });
 
+// batch together requests that grab a thread and extract its messages' contents
+function extractThreadData(threads) {
+	var batch = new gapi.client.newBatch();
+	for (i in threads) {
+		console.log(threads[i]);
+		batch.add(
+			gapi.client.gmail.users.threads
+				.get({
+					userId: "me",
+					id: threads[i].id,
+				})
+				.then((res) => {
+					console.log("Received thread" + threads[i].id + ":\n", res);
+					let payload = res.result.messages[0].payload;
+					var encoded_html = payload.body.data; // undefined if payload is multipart
+					// message mimeType is either multiparty or text/html; we want to use B64 to decode the UTF8-encoded html
+					if (payload.mimeType.substring(0, 5) === "multi") {
+						// mimeType is multipart => body is empty, so dive into nested payloads
+						// payload parts tend to put text/html at index 1
+						console.log(payload.mimeType + "\n", payload.body, payload.parts);
+						let pl = payload;
+						// while (pl.mimeType.substring(0, 5) === "multi") {
+
+						// }
+						encoded_html = pl.body.data;
+					}
+					console.log(B64.decode(encoded_html));
+					// TODO: usually parts[1] has the text/html type, but if not it'll be undefined so check that, then recurse through parts>mimeType until text/html appears to decode it
+				})
+		);
+	}
+	return batch;
+}
+
+function getThreadHTML(threadDetails) {
+	var body = threadDetails.result.messages[0].payload.parts[1].body.data;
+	return B64.decode(body);
+}
+
 // listen for content script port connection
 var gapi_loaded = false;
 chrome.runtime.onConnect.addListener((port) => {
@@ -44,8 +83,6 @@ chrome.runtime.onConnect.addListener((port) => {
 			if (gapi_loaded) {
 				if (msg.message === "sync") {
 					console.log("syncing now");
-					// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
-					// TODO: set rowdescriptor title to name + emailaddress, body to timestamp + email subject, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
 					// port.postMessage({ message: "updated_subscribers" });
 					gapi.client.gmail.users.threads
 						.list({
@@ -53,9 +90,18 @@ chrome.runtime.onConnect.addListener((port) => {
 							maxResults: 5,
 						})
 						.then((threadDetails) => {
-							// var thread_list = threadDetails.threads;
 							console.log(threadDetails.result);
-							let thread_list = threadDetails.result.threads;
+							// extractThreadData returns a batch that when executed, results in ? list of objects that contain the relevant thread details: sender name, email address, unsubscribe link
+							extractThreadData(threadDetails.result.threads).execute(
+								(responseMap, rawBatchResponse) => {
+									// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
+									// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
+									// TODO: iterate through the batch responses and populate a dictionary based on unique subscribed email, then repeat for every 500-thread list
+									console.log(responseMap);
+								}
+							);
+
+							/*
 							for (i in thread_list) {
 								// must use threads.get to get a thread object
 								let thread_id = thread_list[i].id;
@@ -66,15 +112,22 @@ chrome.runtime.onConnect.addListener((port) => {
 										id: thread_id,
 									})
 									.then((res) => {
-										console.log("Getting thread" + thread_id + ":\n", res);
-										let first_message = res.result.messages[0];
-										let date = first_message.internalDate,
-											payload = first_message.payload;
-										console.log(date, payload.mimeType, payload.body, payload.parts);
+										console.log("Received thread" + thread_id + ":\n", res);
+										// emails tend to be of mimetype multipart, meaning messages will have empty bodies, so we have to traverse the payload message parts
+										// dates are epoch, each payload part usually has a plaintext and plainhtml of the message, and we want to decode from utf8 to html to find the unsub link
+										// we can usually find the unsub link in the first email message
+										let msg_1 = res.result.messages[0];
+										let date = msg_1.internalDate,
+											payload = msg_1.payload;
+										console.log(payload.mimeType, payload.body, payload.parts);
+										console.log(B64.decode(msg_1.payload.parts[1].body.data));
+										// TODO: usually parts[1] has the text/html type, but if not it'll be undefined so check that, then recurse through parts>mimeType until text/html appears to decode it
 									});
-							}
+							}*/
 						});
 				}
+				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
+				// if (msg.message === "clear_unsubscribed") { }
 			}
 		});
 		// gets rid of listeners when disconnected?
@@ -122,36 +175,6 @@ chrome.identity.getAuthToken({ interactive: true }, (token) => {
 	request.open("GET", "https://apis.google.com/js/client.js");
 	request.send();
 });
-
-/* here are some utility functions for making common gmail requests */
-function getThreads(query, labels) {
-	return gapi.client.gmail.users.threads.list({
-		userId: "me",
-		q: query, //optional query
-		labelIds: labels, //optional labels
-	}); //returns a promise
-}
-
-//takes in an array of threads from the getThreads response
-function getThreadDetails(threads) {
-	var batch = new gapi.client.newBatch();
-
-	for (var ii = 0; ii < threads.length; ii++) {
-		batch.add(
-			gapi.client.gmail.users.threads.get({
-				userId: "me",
-				id: threads[ii].id,
-			})
-		);
-	}
-
-	return batch;
-}
-
-function getThreadHTML(threadDetails) {
-	var body = threadDetails.result.messages[0].payload.parts[1].body.data;
-	return B64.decode(body);
-}
 
 function archiveThread(id) {
 	var request = gapi.client.request({

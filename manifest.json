@@ -9,7 +9,7 @@
   }],
   "background":{
     "persistent": false,
-    "scripts": ["background.js"]
+    "scripts": ["js/base64.js", "background.js"]
   },
   "content_security_policy": "script-src 'self' https://apis.google.com 'unsafe-eval'; object-src 'self'",
   "oauth2": {
