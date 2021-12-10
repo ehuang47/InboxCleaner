@@ -56,7 +56,7 @@ function extractThreadData(threads) {
 		};
 	});
 
-	var url = "/batch/gmail/v1";
+	var url = "https://www.googleapis.com/batch/gmail/v1";
 	var boundary = "~~~~~~~~~~~~~~~~";
 	var contentId = 0;
 	var data = "--" + boundary + "\r\n";
@@ -77,7 +77,6 @@ function extractThreadData(threads) {
 			// properly generates http request to batch by converting body to blob data, but then fails to meet CORS policy
 			var options = {
 				method: "post",
-				host: "www.googleapis.com",
 				contentType: "multipart/mixed; boundary=" + boundary,
 				payload: b,
 				headers: { Authorization: "Bearer " + gapi_token },
