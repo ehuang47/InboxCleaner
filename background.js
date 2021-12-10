@@ -52,20 +52,20 @@ function extractThreadData(threads) {
 	var body = threads.map((e) => {
 		return {
 			method: "GET",
-			endpoint: "https://www.googleapis.com/gmail/v1/users/me/threads/" + e.id,
+			endpoint: "/gmail/v1/users/me/threads/" + e.id,
 		};
 	});
 
-	var url = "https://www.googleapis.com/batch";
+	var url = "/batch/gmail/v1";
 	var boundary = "~~~~~~~~~~~~~~~~";
 	var contentId = 0;
-	var data = "~~" + boundary + "\r\n";
+	var data = "--" + boundary + "\r\n";
 	for (var i in body) {
 		data += "Content-Type: application/http\r\n";
-		data += "Content-Transfer-Encoding: base64\r\n";
+		// data += "Content-Transfer-Encoding: base64\r\n";
 		data += "Content-ID: " + ++contentId + "\r\n\r\n"; // increment contentID
 		data += body[i].method + " " + body[i].endpoint + "\r\n\r\n";
-		data += "~~" + boundary + "\r\n";
+		data += "--" + boundary + "\r\n";
 	}
 
 	console.log(data);
@@ -77,10 +77,11 @@ function extractThreadData(threads) {
 			// properly generates http request to batch by converting body to blob data, but then fails to meet CORS policy
 			var options = {
 				method: "post",
+				host: "www.googleapis.com",
 				contentType: "multipart/mixed; boundary=" + boundary,
 				payload: b,
 				headers: { Authorization: "Bearer " + gapi_token },
-				muteHttpExceptions: true,
+				// muteHttpExceptions: true,
 			};
 
 			var res = fetch(url, options).then((e) => {
