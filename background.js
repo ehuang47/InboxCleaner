@@ -23,6 +23,24 @@ chrome.runtime.onInstalled.addListener((details) => {
 	});
 });
 
+// recursion to traverse the messageparts and acquire the decoded text/html
+function parseMessagePart(part) {
+	// console.log(part.mimeType, "\n", part.body, "\n", part.parts);
+	if (part == null || part.mimeType === "text/plain") return "";
+	if (part.mimeType === "text/html") {
+		let a = B64.decode(part.body.data);
+		console.log(a);
+		// return B64.decode(part.body.data);
+	}
+	if (part.parts != null) {
+		for (i in part.parts) {
+			var result = parseMessagePart(part.parts[i]);
+			if (result != "") return result; // found text/html, so return decoded version
+		}
+	}
+	return ""; // never found text/html
+}
+
 // batch together requests that grab a thread and extract its messages' contents
 function extractThreadData(threads) {
 	var batch = new gapi.client.newBatch();
@@ -39,18 +57,36 @@ function extractThreadData(threads) {
 					let payload = res.result.messages[0].payload;
 					var encoded_html = payload.body.data; // undefined if payload is multipart
 					// message mimeType is either multiparty or text/html; we want to use B64 to decode the UTF8-encoded html
+					console.log(parseMessagePart(payload));
+					/*
 					if (payload.mimeType.substring(0, 5) === "multi") {
 						// mimeType is multipart => body is empty, so dive into nested payloads
 						// payload parts tend to put text/html at index 1
-						console.log(payload.mimeType + "\n", payload.body, payload.parts);
-						let pl = payload;
-						// while (pl.mimeType.substring(0, 5) === "multi") {
-
-						// }
+						console.log(payload.mimeType, "\n", payload.body, "\n", payload.parts);
+						var pl = payload,
+							foundHTML = false;
+						// TODO: usually parts[1] has the text/html type, but if not it'll be undefined so check that, then recurse through parts>mimeType until text/html appears to decode it
+						console.log(pl);
+						while (pl.mimeType.substring(0, 5) === "multi") {
+							if (pl.parts[0].mimeType.substring(0, 5) === "multi") {
+								pl = pl.parts[0];
+								console.log("Part is multi:" + pl.mimeType);
+								continue;
+							}
+							for (j in pl.parts.length) {
+								console.log(j, pl.parts[j].mimeType);
+								if (pl.parts[j].mimeType === "text/html") {
+									pl = pl.parts[j];
+									foundHTML = true;
+									break;
+								}
+							}
+							if (foundHTML) break;
+						}
 						encoded_html = pl.body.data;
 					}
-					console.log(B64.decode(encoded_html));
-					// TODO: usually parts[1] has the text/html type, but if not it'll be undefined so check that, then recurse through parts>mimeType until text/html appears to decode it
+          console.log(B64.decode(encoded_html));
+          */
 				})
 		);
 	}
@@ -153,13 +189,15 @@ chrome.runtime.onConnect.addListener((port) => {
 // https://gist.github.com/omarstreak/7908035c91927abfef59 --> reference code
 chrome.identity.getAuthToken({ interactive: true }, (token) => {
 	// retrieves an OAuth2 access token for making http request to API functions, then load Google's javascript client libraries... does identity auto-remove invalid cached tokens?
+	// if not using chrome extension, no access to chrome.identity, so use the client.init that'll auto-load auth2
 
 	/* https://stackoverflow.com/questions/18681803/loading-google-api-javascript-client-library-into-chrome-extension
   gapi-client script defines a window["gapi_onload"] as the callback function for after it finishes loading, so it must be defined before making the script request
   not sure why gapi.auth is called to authorizer a new token, when chrome.identity should've done so already. i believe we can go straight to gapi client load
   */
 	window.gapi_onload = () => {
-		gapi.client.load("gmail", "v1", () => {
+		// load with discovery rest url
+		gapi.client.load("https://gmail.googleapis.com/$discovery/rest?version=v1").then(() => {
 			gapi_loaded = true;
 			gapi.client.setToken({ access_token: token });
 		});
