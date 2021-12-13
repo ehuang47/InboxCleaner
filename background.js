@@ -41,6 +41,29 @@ function parseMessagePart(part) {
 	return ""; // never found text/html
 }
 
+function getUnsubLink(html) {
+	var node_list = html.querySelectorAll("a");
+	for (var i in node_list) {
+		let node = node_list[i];
+		// console.log(node.outerHTML, "\n", node.outerText);
+		if (node.outerText != undefined && node.outerText.match(/unsubscribe/i)) {
+			return node.href;
+		}
+		// sometimes, the href acts as onClick to activate native function
+		// console.log(node_list[i]);
+	}
+}
+
+function getSender(headers) {
+	for (var i in headers) {
+		let header = headers[i];
+		if (header.name === "From") {
+			let data = header.value.split(" <");
+			return { name: data[0], email: data[1].slice(0, -1) };
+		}
+	}
+}
+
 // grab every thread and extract its messages' contents
 function extractThreadData(threads) {
 	for (i in threads) {
@@ -53,15 +76,32 @@ function extractThreadData(threads) {
 			.then((res) => {
 				console.log("Received thread" + threads[i].id + ":\n", res);
 				let payload = res.result.messages[0].payload;
-				var encoded_html = payload.body.data; // undefined if payload is multipart
 				// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
-				console.log(parseMessagePart(payload));
+				// TODO: add to email_scan_count, check current thread epoch against last sync epoch to discard remaining
+				var parsed_html = new DOMParser().parseFromString(parseMessagePart(payload), "text/html");
+				var href = getUnsubLink(parsed_html);
+				if (href != null) {
+					// didnt find unsub link, meaning we aren't subscribed, so no need to grab other information
+					var sender = getSender(payload.headers);
+					// console.log(sender);
+					// console.log("Unsubscribe at:", href);
+					// console.log(parsed_html);
+					let email = sender.email;
+					console.log(email, all_subs[email]);
+					if (all_subs[email] == null) {
+						// only record sender info if there is no existing entry
+						all_subs[email] = [sender.name, href];
+					}
+				}
 			});
 	}
 }
 
 // listen for content script port connection
-var gapi_loaded = false;
+var gapi_loaded = false,
+	all_subs = {},
+	last_synced = null,
+	email_scan_count = null;
 chrome.runtime.onConnect.addListener((port) => {
 	console.log("connected to port: \n", port);
 	if (port.name === "content") {
@@ -82,6 +122,8 @@ chrome.runtime.onConnect.addListener((port) => {
 				if (msg.message === "sync") {
 					console.log("syncing now");
 					// port.postMessage({ message: "updated_subscribers" });
+					// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, use promise.all on array[n] to guarantee that i only start scanning the subscription list after i've checked every email
+					// TODO: if deleting emails from inbox, subtract from email scan count accordingly
 					gapi.client.gmail.users.threads
 						.list({
 							userId: "me",
@@ -91,17 +133,9 @@ chrome.runtime.onConnect.addListener((port) => {
 							console.log(threadDetails.result);
 							// extractThreadData returns a batch that when executed, results in ? list of objects that contain the relevant thread details: sender name, email address, unsubscribe link
 							extractThreadData(threadDetails.result.threads);
-
-							/*
-              extractThreadData(threadDetails.result.threads).then(
-								(onFulfilled, onRejected, context) => {
-									// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
-									// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
-									// TODO: iterate through the batch responses and populate a dictionary based on unique subscribed email, then repeat for every 500-thread list
-									console.log(onFulfilled, onRejected, context);
-								}
-							);
-              */
+							// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
+							// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
+							// TODO: iterate through the batch responses and populate a dictionary based on unique subscribed email, then repeat for every 500-thread list
 						});
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
@@ -127,7 +161,7 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 //* Gmail API OAuth2 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// make sure to have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
+// TODO: have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
 // https://gist.github.com/omarstreak/7908035c91927abfef59 --> reference code
 chrome.identity.getAuthToken({ interactive: true }, (token) => {
 	// retrieves an OAuth2 access token for making http request to API functions, then load Google's javascript client libraries... does identity auto-remove invalid cached tokens?

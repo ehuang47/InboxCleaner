@@ -77,7 +77,6 @@ lists for modifying/reading the lists ?
 			});
 
 		/* currently, this opens the thread in a new tab
-    TODO: figure out how to use this functionality in the activation of clicking row descriptor
 		ThreadRowView.addButton({
 			title: "Unsubscribe",
 			iconUrl: "../images/gman.png",
