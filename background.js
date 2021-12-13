@@ -64,7 +64,7 @@ function getSender(headers) {
 	}
 }
 
-// grab every thread and extract its messages' contents
+// grab every thread, extract its messages' contents, and store in the subscription dictionary
 function extractThreadData(threads) {
 	for (i in threads) {
 		console.log(threads[i]);
@@ -74,7 +74,7 @@ function extractThreadData(threads) {
 				id: threads[i].id,
 			})
 			.then((res) => {
-				console.log("Received thread" + threads[i].id + ":\n", res);
+				// console.log("Received thread" + threads[i].id + ":\n", res);
 				let payload = res.result.messages[0].payload;
 				// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
 				// TODO: add to email_scan_count, check current thread epoch against last sync epoch to discard remaining
@@ -87,12 +87,45 @@ function extractThreadData(threads) {
 					// console.log("Unsubscribe at:", href);
 					// console.log(parsed_html);
 					let email = sender.email;
-					console.log(email, all_subs[email]);
+					// console.log(email, all_subs[email]);
 					if (all_subs[email] == null) {
 						// only record sender info if there is no existing entry
 						all_subs[email] = [sender.name, href];
 					}
 				}
+			});
+	}
+}
+
+/* content script loads, triggers the list route handler, which creates the section and sync button
+if user clicks sync now, it alerts the user, saying it will scan the entire inbox and take a while
+when user clicks yes, content script sends a message to background script asking for the data
+a listener in bg script will make gapi calls to prepare the data and then store it in chrome.storage
+when finished, it sends a response to content script to check the storage
+content script receives message and will refresh the page
+*/
+async function getThreads() {
+	// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, use promise.all on array[n] to guarantee that i only start scanning the subscription list after i've checked every email
+	// TODO: if deleting emails from inbox, subtract from email scan count accordingly
+	let maxThreads = 10,
+		thread_count = 0,
+		pg_token = "";
+	while (pg_token != null && thread_count < maxThreads) {
+		pg_token = await gapi.client.gmail.users.threads
+			.list({
+				userId: "me",
+				pageToken: pg_token,
+				maxResults: 5,
+			})
+			.then((threadDetails) => {
+				let res = threadDetails.result;
+				console.log(res, thread_count);
+				extractThreadData(res.threads);
+				thread_count += res.threads.length;
+				return res.nextPageToken;
+				// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
+				// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
+				// TODO: iterate through the batch responses and populate a dictionary based on unique subscribed email, then repeat for every 500-thread list
 			});
 	}
 }
@@ -111,32 +144,11 @@ chrome.runtime.onConnect.addListener((port) => {
 				chrome.tabs.create({ url: msg.url });
 			}
 
-			/* content script loads, triggers the list route handler, which creates the section and sync button
-      if user clicks sync now, it alerts the user, saying it will scan the entire inbox and take a while
-      when user clicks yes, content script sends a message to background script asking for the data
-      a listener in bg script will make gapi calls to prepare the data and then store it in chrome.storage
-      when finished, it sends a response to content script to check the storage
-      content script receives message and will refresh the page
-      */
 			if (gapi_loaded) {
 				if (msg.message === "sync") {
 					console.log("syncing now");
 					// port.postMessage({ message: "updated_subscribers" });
-					// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, use promise.all on array[n] to guarantee that i only start scanning the subscription list after i've checked every email
-					// TODO: if deleting emails from inbox, subtract from email scan count accordingly
-					gapi.client.gmail.users.threads
-						.list({
-							userId: "me",
-							maxResults: 5,
-						})
-						.then((threadDetails) => {
-							console.log(threadDetails.result);
-							// extractThreadData returns a batch that when executed, results in ? list of objects that contain the relevant thread details: sender name, email address, unsubscribe link
-							extractThreadData(threadDetails.result.threads);
-							// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
-							// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
-							// TODO: iterate through the batch responses and populate a dictionary based on unique subscribed email, then repeat for every 500-thread list
-						});
+					getThreads();
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
 				// if (msg.message === "clear_unsubscribed") { }
