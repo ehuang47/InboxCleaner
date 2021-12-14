@@ -67,7 +67,7 @@ function getSender(headers) {
 }
 
 // grab every thread, extract its messages' contents, and store in the subscription dictionary
-async function extractThreadData(threads) {
+function extractThreadData(threads) {
 	let promises = [];
 	for (i in threads) {
 		console.log(threads[i]);
@@ -82,7 +82,11 @@ async function extractThreadData(threads) {
 					let msg = res.result.messages[0];
 					// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
 					// TODO: check current thread epoch against last sync epoch to determine cutoff, which results in extracting the most recent list of subscribers (rowdescriptor objects) since last sync timestamp
-					if (msg.internalDate < last_synced) return; // old email, already scanned
+					if (msg.internalDate < last_synced) {
+						// an old email thread that we've already scanned, so set redundant_emails to true
+						redundant_emails = true;
+						return;
+					}
 					var payload = msg.payload;
 					var parsed_html = new DOMParser().parseFromString(parseMessagePart(payload), "text/html");
 					var href = getUnsubLink(parsed_html);
@@ -99,13 +103,12 @@ async function extractThreadData(threads) {
 							all_subs[email] = [sender.name, href];
 						}
 					}
-					return 1;
 				})
 		);
 	}
-	console.log(promises);
-	Promise.all(promises).then((res) => {
-		console.log("Finished updating sub list ", res);
+	// returns promise that resolves only when all of the other callbacks of thread.get complete
+	return new Promise((resolve, reject) => {
+		resolve(Promise.all(promises));
 	});
 }
 
@@ -118,40 +121,33 @@ content script receives message and will refresh the page
 */
 async function getThreads() {
 	// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, may need promise.all on array[n] for guaranteeing that all callbacks updated sub list
-	let maxThreads = 10,
+	let maxThreads = 50,
 		thread_count = 0,
-		pg_token = "";
-	while (pg_token != null && thread_count < maxThreads) {
-		var res = null;
-		pg_token = await gapi.client.gmail.users.threads
-			.list({
-				userId: "me",
-				pageToken: pg_token,
-				maxResults: 5,
-			})
-			.then((threadDetails) => {
-				/*
-				let res = threadDetails.result;
-				// console.log(res, thread_count);
-				extractThreadData(res.threads);
-				thread_count += res.threads.length;
-        return res.nextPageToken;
-        */
-				res = threadDetails.result;
-				// console.log(res, thread_count);
-				thread_count += res.threads.length;
-				return res.nextPageToken;
-			});
-		await extractThreadData(res.threads);
+		pg_token = "",
+		promises = [];
+	while (pg_token != null && thread_count < maxThreads && !redundant_emails) {
+		var threadDetails = await gapi.client.gmail.users.threads.list({
+			userId: "me",
+			pageToken: pg_token,
+			maxResults: 5,
+		});
+		var res = threadDetails.result;
+		thread_count += res.threads.length;
+		pg_token = res.nextPageToken;
+		promises.push(extractThreadData(res.threads));
 	}
-	// ! here, await waits for extractThreadData to finish execution, but not its gapi request callbacks, so we need to use promise.all on all those callbacks
-	console.log(all_subs);
+	// ! await to make sure we store the next page token in the thread list. Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
+	Promise.all(promises).then((res) => {
+		console.log(all_subs);
+		chrome.storage.local.set({ all_subs: all_subs, last_synced: new Date().getTime() });
+	});
 }
 
 // listen for content script port connection
 var gapi_loaded = false,
 	all_subs = {},
-	last_synced = null;
+	last_synced = null,
+	redundant_emails = false;
 chrome.runtime.onConnect.addListener((port) => {
 	console.log("connected to port: \n", port);
 	if (port.name === "content") {
@@ -171,13 +167,12 @@ chrome.runtime.onConnect.addListener((port) => {
 							last_synced = res.last_synced;
 						}
 						console.log("Sync in progress. Last synced at: ", last_synced);
-						getThreads(); // updates the subscriber list
-						// TODO: update the chrome storage
-						chrome.storage.local.set({ all_subs: all_subs, last_synced: new Date().getTime() });
+						getThreads(); // updates the subscriber list into storage
 					});
 				}
 				if (msg.message === "reset") {
 					chrome.storage.local.clear();
+					redundant_emails = false;
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
 				// if (msg.message === "clear_unsubscribed") { }
