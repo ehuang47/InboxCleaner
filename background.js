@@ -52,6 +52,8 @@ function getUnsubLink(html) {
 		// sometimes, the href acts as onClick to activate native function
 		// console.log(node_list[i]);
 	}
+	// never found the unsub link
+	return null;
 }
 
 function getSender(headers) {
@@ -65,36 +67,46 @@ function getSender(headers) {
 }
 
 // grab every thread, extract its messages' contents, and store in the subscription dictionary
-function extractThreadData(threads) {
+async function extractThreadData(threads) {
+	let promises = [];
 	for (i in threads) {
 		console.log(threads[i]);
-		gapi.client.gmail.users.threads
-			.get({
-				userId: "me",
-				id: threads[i].id,
-			})
-			.then((res) => {
-				// console.log("Received thread" + threads[i].id + ":\n", res);
-				let payload = res.result.messages[0].payload;
-				// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
-				// TODO: add to email_scan_count, check current thread epoch against last sync epoch to discard remaining
-				var parsed_html = new DOMParser().parseFromString(parseMessagePart(payload), "text/html");
-				var href = getUnsubLink(parsed_html);
-				if (href != null) {
-					// didnt find unsub link, meaning we aren't subscribed, so no need to grab other information
-					var sender = getSender(payload.headers);
-					// console.log(sender);
-					// console.log("Unsubscribe at:", href);
-					// console.log(parsed_html);
-					let email = sender.email;
-					// console.log(email, all_subs[email]);
-					if (all_subs[email] == null) {
-						// only record sender info if there is no existing entry
-						all_subs[email] = [sender.name, href];
+		promises.push(
+			gapi.client.gmail.users.threads
+				.get({
+					userId: "me",
+					id: threads[i].id,
+				})
+				.then((res) => {
+					console.log("Received thread" + threads[i].id + ":\n", res);
+					let msg = res.result.messages[0];
+					// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
+					// TODO: check current thread epoch against last sync epoch to determine cutoff, which results in extracting the most recent list of subscribers (rowdescriptor objects) since last sync timestamp
+					if (msg.internalDate < last_synced) return; // old email, already scanned
+					var payload = msg.payload;
+					var parsed_html = new DOMParser().parseFromString(parseMessagePart(payload), "text/html");
+					var href = getUnsubLink(parsed_html);
+					if (href != null) {
+						// only grab sender information when an unsub link is found
+						var sender = getSender(payload.headers);
+						// console.log(sender);
+						// console.log("Unsubscribe at:", href);
+						// console.log(parsed_html);
+						let email = sender.email;
+						// console.log(email, all_subs[email]);
+						if (all_subs[email] == null) {
+							// only record sender info if there is no existing entry
+							all_subs[email] = [sender.name, href];
+						}
 					}
-				}
-			});
+					return 1;
+				})
+		);
 	}
+	console.log(promises);
+	Promise.all(promises).then((res) => {
+		console.log("Finished updating sub list ", res);
+	});
 }
 
 /* content script loads, triggers the list route handler, which creates the section and sync button
@@ -105,12 +117,12 @@ when finished, it sends a response to content script to check the storage
 content script receives message and will refresh the page
 */
 async function getThreads() {
-	// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, use promise.all on array[n] to guarantee that i only start scanning the subscription list after i've checked every email
-	// TODO: if deleting emails from inbox, subtract from email scan count accordingly
+	// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, may need promise.all on array[n] for guaranteeing that all callbacks updated sub list
 	let maxThreads = 10,
 		thread_count = 0,
 		pg_token = "";
 	while (pg_token != null && thread_count < maxThreads) {
+		var res = null;
 		pg_token = await gapi.client.gmail.users.threads
 			.list({
 				userId: "me",
@@ -118,23 +130,28 @@ async function getThreads() {
 				maxResults: 5,
 			})
 			.then((threadDetails) => {
+				/*
 				let res = threadDetails.result;
-				console.log(res, thread_count);
+				// console.log(res, thread_count);
 				extractThreadData(res.threads);
 				thread_count += res.threads.length;
+        return res.nextPageToken;
+        */
+				res = threadDetails.result;
+				// console.log(res, thread_count);
+				thread_count += res.threads.length;
 				return res.nextPageToken;
-				// TODO: generate list of subscribers (rowdescriptor objects) up until last sync timestamp using gapi & the current sync timestamp to store in chrome.storage
-				// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
-				// TODO: iterate through the batch responses and populate a dictionary based on unique subscribed email, then repeat for every 500-thread list
 			});
+		await extractThreadData(res.threads);
 	}
+	// ! here, await waits for extractThreadData to finish execution, but not its gapi request callbacks, so we need to use promise.all on all those callbacks
+	console.log(all_subs);
 }
 
 // listen for content script port connection
 var gapi_loaded = false,
 	all_subs = {},
-	last_synced = null,
-	email_scan_count = null;
+	last_synced = null;
 chrome.runtime.onConnect.addListener((port) => {
 	console.log("connected to port: \n", port);
 	if (port.name === "content") {
@@ -146,9 +163,21 @@ chrome.runtime.onConnect.addListener((port) => {
 
 			if (gapi_loaded) {
 				if (msg.message === "sync") {
-					console.log("syncing now");
 					// port.postMessage({ message: "updated_subscribers" });
-					getThreads();
+					chrome.storage.local.get(["all_subs", "last_synced"], (res) => {
+						// console.log(res);
+						if (Object.keys(res).length != 0) {
+							all_subs = res.all_subs;
+							last_synced = res.last_synced;
+						}
+						console.log("Sync in progress. Last synced at: ", last_synced);
+						getThreads(); // updates the subscriber list
+						// TODO: update the chrome storage
+						chrome.storage.local.set({ all_subs: all_subs, last_synced: new Date().getTime() });
+					});
+				}
+				if (msg.message === "reset") {
+					chrome.storage.local.clear();
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
 				// if (msg.message === "clear_unsubscribed") { }

@@ -34,8 +34,14 @@ lists for modifying/reading the lists ?
 	// grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
 	sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
 		// TODO: check chrome.storage for sync timestamp and subscriber list. depending on presence or lack thereof, set the value for a last_synced string and sub_list array
-		// TODO: if a row descriptor's label is set, compare it to current timestamp. if older than 1 week, update the storage and then set the rows
+		// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
 		// TODO: set contentElement to a nicely styled html notice/instructions on how to use the subscription
+		/*
+    chrome.storage.local.get(['variable'], function(result) {
+  let awesomeVariable = result.variable;
+  // Do something with awesomeVariable
+});
+    */
 		var last_synced = ""; // set to "Last synced: timestamp"
 		var subs_list = []; // set to the array in storage
 		var collap_section = ListRouteView.addCollapsibleSection({
@@ -48,6 +54,10 @@ lists for modifying/reading the lists ?
 				port.postMessage({ message: "sync" });
 			},
 			tableRows: subs_list,
+			footerLinkText: "Reset",
+			onFooterLinkClick: () => {
+				port.postMessage({ message: "reset" });
+			},
 		});
 	});
 
