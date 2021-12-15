@@ -33,12 +33,36 @@ async function getFromLocal(key) {
 	});
 }
 
+function instructionHTML() {
+	var parent = document.createElement("div");
+	var notice = document.createElement("p");
+	notice.innerHTML =
+		"If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, follow the steps below.";
+	parent.appendChild(notice);
+
+	var instructions = document.createElement("ol");
+	parent.appendChild(instructions);
+	var steps = [
+		"Copy and paste their email address into the search bar and hit enter.",
+		"Check the box to select all emails, then select the option to 'Select all conversations that match this search'.",
+		"With all emails selected, click the trash bin 'Delete' icon. ",
+	];
+	for (var i = 0; i < 3; i++) {
+		let step = document.createElement("li");
+		step.setAttribute("id", "li" + i);
+		step.innerHTML = steps[i];
+		instructions.appendChild(step);
+	}
+
+	console.log(parent);
+	return parent;
+}
+
 async function loadInboxSDK() {
 	var res = await getFromLocal(["all_subs", "last_synced"]);
 	InboxSDK.load(2, "sdk_gmanager_284293dc99").then(function (sdk) {
 		// grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
 		sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
-			// TODO: set contentElement to a nicely styled html notice/instructions on how to use the subscription
 			var last_synced = "";
 			var all_subs = [];
 
@@ -63,20 +87,18 @@ async function loadInboxSDK() {
 					});
 				}
 
-				// TODO: convert last synced epoch to "Last synced: __"
 				last_synced = "Last synced: " + new Date(res.last_synced).toString();
 			}
 
 			ListRouteView.addCollapsibleSection({
 				title: "Subscriptions",
-				subtitle:
-					// "To unsubscribe from an email address, click on the respective row. It will navigate you to a new tab where you can fill out the request to unsubscribe. If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, first copy and paste their email address into the search bar and hit enter. Check the box to select all emails, then select the option to 'Select all conversations that match this search'. Now that you've selected all of their emails, click the trashbin 'Delete' icon to delete them." +
-					last_synced,
+				subtitle: last_synced,
 				titleLinkText: "Sync Now",
 				onTitleLinkClick: () => {
 					port.postMessage({ message: "sync" });
 				},
 				tableRows: all_subs,
+				contentElement: instructionHTML(),
 				footerLinkText: "Reset",
 				onFooterLinkClick: () => {
 					port.postMessage({ message: "reset" });
@@ -85,31 +107,13 @@ async function loadInboxSDK() {
 		});
 
 		sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
-			// TODO: check the contacts (emailAddress and name) to see if they appear in the chrome.storage subscriber list and that label isnt set. if so, then add the "Subscribed" label
 			var contact = ThreadRowView.getContacts()[0];
-			// console.log(contact.emailAddress, contact.name);
-			let subscribed = false;
-			if (subscribed)
+			if (res.all_subs[contact.emailAddress] != null)
 				ThreadRowView.addLabel({
 					title: "Subscribed",
 					foregroundColor: "white",
 					backgroundColor: "gold",
 				});
-
-			/* currently, this opens the thread in a new tab
-		ThreadRowView.addButton({
-			title: "Unsubscribe",
-			iconUrl: "../images/gman.png",
-      onClick: (event) => {
-        // check chrome storage for all the emails
-				event.threadRowView.getThreadIDIfStableAsync().then((id) => {
-					// grab the current inbox url and re-direct to the thread id to open in new tab
-					let thread_url = $("a[href^='http']").eq(0).attr("href").slice(0, -5) + "#inbox/" + id;
-					port.postMessage({ message: "open_new_tab", url: thread_url });
-				});
-			},
-		});
-    */
 		});
 	});
 }
