@@ -94,7 +94,7 @@ function extractThreadData(threads) {
 						// console.log(email, all_subs[email]);
 						if (all_subs[email] == null) {
 							// only record sender info if there is no existing entry
-							all_subs[email] = [sender.name, href];
+							all_subs[email] = [sender.name, href, true];
 						}
 					}
 				})
@@ -165,8 +165,7 @@ chrome.runtime.onConnect.addListener((port) => {
 						}
 						console.log("Sync in progress. Last synced at: ", last_synced);
 						getThreads().then(() => {
-							console.log("hello");
-							// port.postMessage({ message: "updated_subscribers" });
+							port.postMessage({ message: "updated_subscribers" });
 						}); // updates the subscriber list into storage
 					});
 				}
@@ -174,6 +173,7 @@ chrome.runtime.onConnect.addListener((port) => {
 					chrome.storage.local.clear();
 					all_subs = {};
 					last_synced = null;
+					port.postMessage({ message: "updated_subscribers" });
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
 				// if (msg.message === "clear_unsubscribed") { }

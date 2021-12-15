@@ -43,24 +43,28 @@ async function loadInboxSDK() {
 			var all_subs = [];
 
 			if (Object.keys(res).length != 0) {
-				// TODO: set rowdescriptor title to name, body to emailaddress, shortdetail text for unsubscribe link, and onclick to a function that'll check storage, grabs the unsub link if exists or else do nothing, opens a new tab for user to fill out, update labels to one that says "unsubbed timestamp", nullify the unsub link, and refresh that tab
-				// all_subs = res.all_subs;
 				let subs = res.all_subs;
 				for (key in subs) {
-					// key = email, subs = { [name, unsub link], ... }
+					// key = email, subs = { [name, unsub link, isSubscribed bool], ... }
 					console.log(key, subs[key]);
 					all_subs.push({
 						title: subs[key][0],
 						body: key,
-						shortDetailText: subs[key][1],
+						shortDetailText: "Click this row to unsubscribe from " + key,
+						isRead: true,
+						labels: subs[key][2]
+							? [{ title: "Subscribed", foregroundColor: "white", backgroundColor: "gold" }]
+							: [{ title: "Unsubscribed", foregroundColor: "white", backgroundColor: "pink" }],
 						onClick: () => {
-							alert("hi!");
+							subs[key][2] = false;
+							chrome.storage.local.set({ all_subs: subs });
+							port.postMessage({ message: "open_new_tab", url: subs[key][1] });
 						},
 					});
 				}
 
 				// TODO: convert last synced epoch to "Last synced: __"
-				// last_synced = res.last_synced;
+				last_synced = "Last synced: " + new Date(res.last_synced).toString();
 			}
 
 			ListRouteView.addCollapsibleSection({
