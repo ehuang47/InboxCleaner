@@ -53,9 +53,13 @@ function instructionHTML() {
 		step.innerHTML = steps[i];
 		instructions.appendChild(step);
 	}
-
-	console.log(parent);
 	return parent;
+}
+
+function unsubscribe(subs, key) {
+	subs[key][2] = false;
+	chrome.storage.local.set({ all_subs: subs });
+	port.postMessage({ message: "open_new_tab", url: subs[key][1] });
 }
 
 async function loadInboxSDK() {
@@ -79,10 +83,9 @@ async function loadInboxSDK() {
 						labels: subs[key][2]
 							? [{ title: "Subscribed", foregroundColor: "white", backgroundColor: "gold" }]
 							: [{ title: "Unsubscribed", foregroundColor: "white", backgroundColor: "pink" }],
-						onClick: () => {
-							subs[key][2] = false;
-							chrome.storage.local.set({ all_subs: subs });
-							port.postMessage({ message: "open_new_tab", url: subs[key][1] });
+						onClick: (event) => {
+							console.log(event);
+							unsubscribe(subs, key);
 						},
 					});
 				}
@@ -109,11 +112,17 @@ async function loadInboxSDK() {
 		sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
 			var contact = ThreadRowView.getContacts()[0];
 			if (res.all_subs[contact.emailAddress] != null)
-				ThreadRowView.addLabel({
-					title: "Subscribed",
-					foregroundColor: "white",
-					backgroundColor: "gold",
-				});
+				res.all_subs[contact.emailAddress][2]
+					? ThreadRowView.addLabel({
+							title: "Subscribed",
+							foregroundColor: "white",
+							backgroundColor: "gold",
+					  })
+					: ThreadRowView.addLabel({
+							title: "Unsubscribed",
+							foregroundColor: "white",
+							backgroundColor: "pink",
+					  });
 		});
 	});
 }
