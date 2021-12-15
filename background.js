@@ -3,11 +3,6 @@ chrome.runtime.onInstalled.addListener((details) => {
 	// gets previous extension version, reason "oninstalled" activated, and maybe ID
 	console.log("Triggered onInstalled due to: " + details.reason);
 
-	// set stored color for changing background
-	chrome.storage.sync.set({ color: "#3aa757" }, function () {
-		console.log("The color is green.");
-	});
-
 	// setting rules for page actions & taking action when accessing a page that meets all criteria
 	chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
 		chrome.declarativeContent.onPageChanged.addRules([
@@ -81,7 +76,6 @@ function extractThreadData(threads) {
 					console.log("Received thread" + threads[i].id + ":\n", res);
 					let msg = res.result.messages[0];
 					// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
-					// TODO: check current thread epoch against last sync epoch to determine cutoff, which results in extracting the most recent list of subscribers (rowdescriptor objects) since last sync timestamp
 					if (msg.internalDate < last_synced) {
 						// an old email thread that we've already scanned, so set redundant_emails to true
 						redundant_emails = true;
@@ -112,16 +106,9 @@ function extractThreadData(threads) {
 	});
 }
 
-/* content script loads, triggers the list route handler, which creates the section and sync button
-if user clicks sync now, it alerts the user, saying it will scan the entire inbox and take a while
-when user clicks yes, content script sends a message to background script asking for the data
-a listener in bg script will make gapi calls to prepare the data and then store it in chrome.storage
-when finished, it sends a response to content script to check the storage
-content script receives message and will refresh the page
-*/
+// grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 async function getThreads() {
-	// TODO: calculate how many list() calls i must make based on n = total inbox count - emails checked, may need promise.all on array[n] for guaranteeing that all callbacks updated sub list
-	let maxThreads = 50,
+	let maxThreads = 10,
 		thread_count = 0,
 		pg_token = "",
 		promises = [];
@@ -137,9 +124,16 @@ async function getThreads() {
 		promises.push(extractThreadData(res.threads));
 	}
 	// ! await to make sure we store the next page token in the thread list. Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
-	Promise.all(promises).then((res) => {
-		console.log(all_subs);
-		chrome.storage.local.set({ all_subs: all_subs, last_synced: new Date().getTime() });
+	return new Promise((resolve, reject) => {
+		resolve(
+			Promise.all(promises).then((res) => {
+				console.log(all_subs);
+				chrome.storage.local.set({ all_subs: all_subs, last_synced: new Date().getTime() });
+				let elapsed = new Date().getTime() - start;
+				var mins = elapsed / 60000;
+				console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
+			})
+		);
 	});
 }
 
@@ -147,7 +141,9 @@ async function getThreads() {
 var gapi_loaded = false,
 	all_subs = {},
 	last_synced = null,
-	redundant_emails = false;
+	redundant_emails = false,
+	start = null;
+
 chrome.runtime.onConnect.addListener((port) => {
 	console.log("connected to port: \n", port);
 	if (port.name === "content") {
@@ -159,7 +155,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
 			if (gapi_loaded) {
 				if (msg.message === "sync") {
-					// port.postMessage({ message: "updated_subscribers" });
+					start = new Date().getTime();
+					redundant_emails = false; // reset bool for every sync request
 					chrome.storage.local.get(["all_subs", "last_synced"], (res) => {
 						// console.log(res);
 						if (Object.keys(res).length != 0) {
@@ -167,12 +164,16 @@ chrome.runtime.onConnect.addListener((port) => {
 							last_synced = res.last_synced;
 						}
 						console.log("Sync in progress. Last synced at: ", last_synced);
-						getThreads(); // updates the subscriber list into storage
+						getThreads().then(() => {
+							console.log("hello");
+							// port.postMessage({ message: "updated_subscribers" });
+						}); // updates the subscriber list into storage
 					});
 				}
 				if (msg.message === "reset") {
 					chrome.storage.local.clear();
-					redundant_emails = false;
+					all_subs = {};
+					last_synced = null;
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
 				// if (msg.message === "clear_unsubscribed") { }
@@ -200,15 +201,14 @@ chrome.runtime.onConnect.addListener((port) => {
 // TODO: have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
 // https://gist.github.com/omarstreak/7908035c91927abfef59 --> reference code
 chrome.identity.getAuthToken({ interactive: true }, (token) => {
-	// retrieves an OAuth2 access token for making http request to API functions, then load Google's javascript client libraries... does identity auto-remove invalid cached tokens?
-	// if not using chrome extension, no access to chrome.identity, so use the client.init that'll auto-load auth2
-
-	/* https://stackoverflow.com/questions/18681803/loading-google-api-javascript-client-library-into-chrome-extension
+	/* retrieves an OAuth2 access token for making http request to API functions, then load Google's javascript client libraries
+  ? does identity auto - remove invalid cached tokens ?
+  if not using chrome extension, no access to chrome.identity, so use the client.init that'll auto-load auth2
+  https://stackoverflow.com/questions/18681803/loading-google-api-javascript-client-library-into-chrome-extension
   gapi-client script defines a window["gapi_onload"] as the callback function for after it finishes loading, so it must be defined before making the script request
-  not sure why gapi.auth is called to authorizer a new token, when chrome.identity should've done so already. i believe we can go straight to gapi client load
   */
 	window.gapi_onload = () => {
-		// load with discovery rest url
+		// load with discovery rest url and set the chrome identity oauth token to make authorized requests
 		gapi.client.load("https://gmail.googleapis.com/$discovery/rest?version=v1").then(() => {
 			gapi_loaded = true;
 			gapi.client.setToken({ access_token: token });
@@ -226,39 +226,4 @@ chrome.identity.getAuthToken({ interactive: true }, (token) => {
 	request.send();
 });
 
-/* listen for when the browser button is clicked
-! chrome.browserAction or pageAction
-chrome.action.onClicked.addListener((tab) => {
-	// Send a message to the active tab
-	chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-		var activeTab = tabs[0];
-		// upon response with active tab URL, create a duplicate tab
-		chrome.tabs.sendMessage(activeTab.id, { message: "clicked_browser_action" }, (response) => {
-			if (response.message === "open_new_tab") {
-				chrome.tabs.create({ url: response.url });
-			}
-		});
-	});
-});
-*/
-
-/* storage API get/set 
-chrome.storage.local.set({ variable: variableInformation });
-chrome.storage.local.get(['variable'], function(result) {
-  let awesomeVariable = result.variable;
-  // Do something with awesomeVariable
-});
-
-* alarms API for timer delay
-chrome.alarms.create({delayInMinutes: 3.0})
-chrome.alarms.onAlarm.addListener(function() {
-  alert("Hello, world!")
-});
-
-* use callback to async call functions defined here
-document.getElementById('target').addEventListener('click', function() {
-  chrome.runtime.getBackgroundPage(function(backgroundPage){
-    backgroundPage.backgroundFunction()
-  })
-});
-*/
+// https://gist.github.com/sumitpore/47439fcd86696a71bf083ede8bbd5466
