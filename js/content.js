@@ -97,7 +97,10 @@ async function loadInboxSDK() {
 
 			ListRouteView.addCollapsibleSection({
 				title: "Subscriptions",
-				subtitle: "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
+				subtitle:
+					last_synced === ""
+						? last_synced
+						: "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
 				titleLinkText: "Sync Now",
 				onTitleLinkClick: () => {
 					port.postMessage({ message: "sync" });

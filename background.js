@@ -42,6 +42,7 @@ function getUnsubLink(html) {
 		let node = node_list[i];
 		// console.log(node.outerHTML, "\n", node.outerText);
 		if (node.outerText != undefined && node.outerText.match(/unsubscribe/i)) {
+			// console.log(node.outerText);
 			return node.href;
 		}
 		// sometimes, the href acts as onClick to activate native function
@@ -51,6 +52,18 @@ function getUnsubLink(html) {
 	return null;
 }
 
+function getHeaderUnsubLink(headers) {
+	for (var i in headers) {
+		let header = headers[i];
+		if (header.name === "List-Unsubscribe") {
+			console.log(header.value);
+			// some headers are strange in that its a pair <unsub link, mail link> or it lacks the url so its just <mail-link>
+			let http_or_mail = header.value.split(",")[0].slice(1, -1);
+			return http_or_mail.match(/^https?:\/\/[^t][^r][^k]/) ? http_or_mail : null;
+		}
+	}
+	return null;
+}
 function getSender(headers) {
 	for (var i in headers) {
 		let header = headers[i];
@@ -82,8 +95,16 @@ function extractThreadData(threads) {
 						return;
 					}
 					var payload = msg.payload;
-					var parsed_html = new DOMParser().parseFromString(parseMessagePart(payload), "text/html");
-					var href = getUnsubLink(parsed_html);
+					var href = getHeaderUnsubLink(payload.headers);
+					if (href == null) {
+						// when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
+						var parsed_html = new DOMParser().parseFromString(
+							parseMessagePart(payload),
+							"text/html"
+						);
+						href = getUnsubLink(parsed_html);
+					}
+
 					if (href != null) {
 						// only grab sender information when an unsub link is found
 						var sender = getSender(payload.headers);
@@ -108,7 +129,7 @@ function extractThreadData(threads) {
 
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 async function getThreads() {
-	let maxThreads = 15,
+	let maxThreads = 100,
 		thread_count = 0,
 		pg_token = "",
 		promises = [];
@@ -116,7 +137,7 @@ async function getThreads() {
 		var threadDetails = await gapi.client.gmail.users.threads.list({
 			userId: "me",
 			pageToken: pg_token,
-			maxResults: 5,
+			maxResults: 50,
 		});
 		var res = threadDetails.result;
 		thread_count += res.threads.length;
