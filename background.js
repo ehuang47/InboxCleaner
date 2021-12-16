@@ -38,7 +38,7 @@ function parseMessagePart(part) {
 
 function getUnsubLink(html) {
 	var node_list = html.querySelectorAll("a");
-	for (var i in node_list) {
+	for (let i = 0; i < node_list.length; i++) {
 		let node = node_list[i];
 		// console.log(node.outerHTML, "\n", node.outerText);
 		if (node.outerText != undefined && node.outerText.match(/unsubscribe/i)) {
@@ -176,7 +176,6 @@ chrome.runtime.onConnect.addListener((port) => {
 					port.postMessage({ message: "updated_subscribers" });
 				}
 				// TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
-				// if (msg.message === "clear_unsubscribed") { }
 			}
 		});
 		// gets rid of listeners when disconnected?

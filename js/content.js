@@ -56,12 +56,6 @@ function instructionHTML() {
 	return parent;
 }
 
-function unsubscribe(subs, key) {
-	subs[key][2] = false;
-	chrome.storage.local.set({ all_subs: subs });
-	port.postMessage({ message: "open_new_tab", url: subs[key][1] });
-}
-
 async function loadInboxSDK() {
 	var res = await getFromLocal(["all_subs", "last_synced"]);
 	InboxSDK.load(2, "sdk_gmanager_284293dc99").then(function (sdk) {
@@ -78,15 +72,11 @@ async function loadInboxSDK() {
 					all_subs.push({
 						title: subs[key][0],
 						body: key,
-						shortDetailText: "Click this row to unsubscribe from " + key,
+						shortDetailText: "Unsubscribe",
 						isRead: true,
 						labels: subs[key][2]
 							? [{ title: "Subscribed", foregroundColor: "white", backgroundColor: "gold" }]
 							: [{ title: "Unsubscribed", foregroundColor: "white", backgroundColor: "pink" }],
-						onClick: (event) => {
-							console.log(event);
-							unsubscribe(subs, key);
-						},
 					});
 				}
 
@@ -107,11 +97,24 @@ async function loadInboxSDK() {
 					port.postMessage({ message: "reset" });
 				},
 			});
+
+			let node_list = document.querySelectorAll(".inboxsdk__resultsSection_tableRow.zA.yO");
+			for (let i = 0; i < node_list.length; i++) {
+				var spans = node_list[i].querySelectorAll("span");
+				// console.log(spans[0], spans[1], spans[2]); // should be sender, email, unsubscribe link
+				let key = spans[1].innerText;
+				spans[2].addEventListener("click", (e) => {
+					let subs = res.all_subs;
+					subs[key][2] = false;
+					chrome.storage.local.set({ all_subs: subs });
+					port.postMessage({ message: "open_new_tab", url: subs[key][1] });
+				});
+			}
 		});
 
 		sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
 			var contact = ThreadRowView.getContacts()[0];
-			if (res.all_subs[contact.emailAddress] != null)
+			if (res.all_subs != null && res.all_subs[contact.emailAddress] != null)
 				res.all_subs[contact.emailAddress][2]
 					? ThreadRowView.addLabel({
 							title: "Subscribed",
