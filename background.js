@@ -65,7 +65,7 @@ function getSender(headers) {
 function extractThreadData(threads) {
 	let promises = [];
 	for (i in threads) {
-		console.log(threads[i]);
+		// console.log(threads[i]);
 		promises.push(
 			gapi.client.gmail.users.threads
 				.get({
@@ -108,7 +108,7 @@ function extractThreadData(threads) {
 
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 async function getThreads() {
-	let maxThreads = 10,
+	let maxThreads = 15,
 		thread_count = 0,
 		pg_token = "",
 		promises = [];

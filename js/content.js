@@ -68,7 +68,7 @@ async function loadInboxSDK() {
 				let subs = res.all_subs;
 				for (key in subs) {
 					// key = email, subs = { [name, unsub link, isSubscribed bool], ... }
-					console.log(key, subs[key]);
+					// console.log(key, subs[key]);
 					all_subs.push({
 						title: subs[key][0],
 						body: key,
@@ -80,22 +80,30 @@ async function loadInboxSDK() {
 					});
 				}
 
+				all_subs.sort((a, b) => {
+					let fa = a.body.toLowerCase(),
+						fb = b.body.toLowerCase();
+
+					if (fa < fb) {
+						return -1;
+					}
+					if (fa > fb) {
+						return 1;
+					}
+					return 0;
+				});
 				last_synced = "Last synced: " + new Date(res.last_synced).toString();
 			}
 
 			ListRouteView.addCollapsibleSection({
 				title: "Subscriptions",
-				subtitle: last_synced,
+				subtitle: "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
 				titleLinkText: "Sync Now",
 				onTitleLinkClick: () => {
 					port.postMessage({ message: "sync" });
 				},
 				tableRows: all_subs,
 				contentElement: instructionHTML(),
-				footerLinkText: "Reset",
-				onFooterLinkClick: () => {
-					port.postMessage({ message: "reset" });
-				},
 			});
 
 			let node_list = document.querySelectorAll(".inboxsdk__resultsSection_tableRow.zA.yO");
@@ -110,6 +118,11 @@ async function loadInboxSDK() {
 					port.postMessage({ message: "open_new_tab", url: subs[key][1] });
 				});
 			}
+
+			let test = document.querySelector(".inboxsdk__resultsSection .zE");
+			test.children[0].addEventListener("click", (e) => {
+				port.postMessage({ message: "reset" });
+			});
 		});
 
 		sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
