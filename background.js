@@ -69,7 +69,11 @@ function getSender(headers) {
 		let header = headers[i];
 		if (header.name === "From") {
 			let data = header.value.split(" <");
-			return { name: data[0], email: data[1].slice(0, -1) };
+			// console.log(header, data);
+			// some headers solely have an email value, so splitting returns array of size 1
+			return data[1] != null
+				? { name: data[0], email: data[1].slice(0, -1) }
+				: { name: "", email: data[0] };
 		}
 	}
 }
@@ -119,6 +123,9 @@ function extractThreadData(threads) {
 						}
 					}
 				})
+				.catch((e) => {
+					console.log("Error: " + e);
+				})
 		);
 	}
 	// returns promise that resolves only when all of the other callbacks of thread.get complete
@@ -129,7 +136,7 @@ function extractThreadData(threads) {
 
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 async function getThreads() {
-	let maxThreads = 100,
+	let maxThreads = 1500,
 		thread_count = 0,
 		pg_token = "",
 		promises = [];
@@ -137,7 +144,7 @@ async function getThreads() {
 		var threadDetails = await gapi.client.gmail.users.threads.list({
 			userId: "me",
 			pageToken: pg_token,
-			maxResults: 50,
+			maxResults: 500,
 		});
 		var res = threadDetails.result;
 		thread_count += res.threads.length;
