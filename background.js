@@ -19,6 +19,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // recursion to traverse the messageparts and acquire the decoded text/html
+// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
 function parseMessagePart(part) {
 	// console.log(part.mimeType, "\n", part.body, "\n", part.parts);
 	if (part == null || part.mimeType === "text/plain") return "";
@@ -56,7 +57,7 @@ function getHeaderUnsubLink(headers) {
 	for (var i in headers) {
 		let header = headers[i];
 		if (header.name === "List-Unsubscribe") {
-			console.log(header.value);
+			// console.log(header.value);
 			// some headers are strange in that its a pair <unsub link, mail link> or it lacks the url so its just <mail-link>
 			let http_or_mail = header.value.split(",")[0].slice(1, -1);
 			return http_or_mail.match(/^https?:\/\/[^t][^r][^k]/) ? http_or_mail : null;
@@ -86,37 +87,35 @@ function extractThreadData(threads) {
 					id: threads[i].id,
 				})
 				.then((res) => {
-					console.log("Received thread" + threads[i].id + ":\n", res);
+					// console.log("Received thread" + threads[i].id + ":\n", res);
 					let msg = res.result.messages[0];
-					// message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
+
+					// an old email thread that we've already scanned, so set redundant_emails to true
 					if (msg.internalDate < last_synced) {
-						// an old email thread that we've already scanned, so set redundant_emails to true
 						redundant_emails = true;
 						return;
 					}
-					var payload = msg.payload;
-					var href = getHeaderUnsubLink(payload.headers);
-					if (href == null) {
-						// when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
-						var parsed_html = new DOMParser().parseFromString(
-							parseMessagePart(payload),
-							"text/html"
-						);
-						href = getUnsubLink(parsed_html);
-					}
 
-					if (href != null) {
-						// only grab sender information when an unsub link is found
-						var sender = getSender(payload.headers);
-						// console.log(sender);
-						// console.log("Unsubscribe at:", href);
-						// console.log(parsed_html);
-						let email = sender.email;
-						// console.log(email, all_subs[email]);
-						if (all_subs[email] == null) {
-							// only record sender info if there is no existing entry
-							all_subs[email] = [sender.name, href, true];
+					var payload = msg.payload;
+					var sender = getSender(payload.headers);
+					// console.log(sender);
+					let email = sender.email;
+					// console.log(email, all_subs[email]);
+
+					// record sender info if there is no existing entry, else we've seen this email, so do nothing
+					if (all_subs[email] == null) {
+						var href = getHeaderUnsubLink(payload.headers);
+						if (href == null) {
+							// when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
+							var parsed_html = new DOMParser().parseFromString(
+								parseMessagePart(payload),
+								"text/html"
+							);
+							href = getUnsubLink(parsed_html);
+							// console.log("Unsubscribe at:", href);
+							// console.log(parsed_html);
 						}
+						all_subs[email] = [sender.name, href, true];
 					}
 				})
 		);
@@ -127,22 +126,40 @@ function extractThreadData(threads) {
 	});
 }
 
+function timeElapsed(email_count) {
+	let elapsed = new Date().getTime() - start;
+	var mins = elapsed / 60000;
+	console.log(
+		email_count +
+			" emails parsed in " +
+			mins.toFixed(3) +
+			" min, " +
+			(elapsed / 1000 - mins * 60).toFixed(3) +
+			" sec"
+	);
+}
+
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 async function getThreads() {
-	let maxThreads = 100,
+	let maxThreads = 1500,
 		thread_count = 0,
 		pg_token = "",
 		promises = [];
 	while (pg_token != null && thread_count < maxThreads && !redundant_emails) {
+		/*if (thread_count / (new Date().getTime() - start / 60000) > 12500) {
+			setTimeout(() => {}, timeout);
+    }
+    */
 		var threadDetails = await gapi.client.gmail.users.threads.list({
 			userId: "me",
 			pageToken: pg_token,
-			maxResults: 50,
+			maxResults: 500,
 		});
 		var res = threadDetails.result;
 		thread_count += res.threads.length;
 		pg_token = res.nextPageToken;
 		promises.push(extractThreadData(res.threads));
+		timeElapsed(thread_count);
 	}
 	// ! await to make sure we store the next page token in the thread list. Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
 	return new Promise((resolve, reject) => {
@@ -150,9 +167,7 @@ async function getThreads() {
 			Promise.all(promises).then((res) => {
 				console.log(all_subs);
 				chrome.storage.local.set({ all_subs: all_subs, last_synced: new Date().getTime() });
-				let elapsed = new Date().getTime() - start;
-				var mins = elapsed / 60000;
-				console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
+				timeElapsed(thread_count);
 			})
 		);
 	});
