@@ -70,7 +70,11 @@ function getSender(headers) {
 		let header = headers[i];
 		if (header.name === "From") {
 			let data = header.value.split(" <");
-			return { name: data[0], email: data[1].slice(0, -1) };
+			console.log(header, data);
+			// some headers solely have an email value, so splitting returns array of size 1
+			return data[1] != null
+				? { name: data[0], email: data[1].slice(0, -1) }
+				: { name: "", email: data[0] };
 		}
 	}
 }
@@ -114,9 +118,14 @@ function extractThreadData(threads) {
 							href = getUnsubLink(parsed_html);
 							// console.log("Unsubscribe at:", href);
 							// console.log(parsed_html);
+
+							// only add email to the list if parsing finds an unsub link
+							if (href != null) all_subs[email] = [sender.name, href, true];
 						}
-						all_subs[email] = [sender.name, href, true];
 					}
+				})
+				.catch((e) => {
+					console.log("Error: " + e);
 				})
 		);
 	}
