@@ -109,6 +109,7 @@ async function loadInboxSDK() {
 				contentElement: instructionHTML(),
 			});
 
+			// scan the document for the html injected by inboxsdk and add onclick functionality
 			let node_list = document.querySelectorAll(".inboxsdk__resultsSection_tableRow.zA.yO");
 			for (let i = 0; i < node_list.length; i++) {
 				var spans = node_list[i].querySelectorAll("span");
@@ -128,6 +129,7 @@ async function loadInboxSDK() {
 			});
 		});
 
+		// for each thread row that we see, attach a label to indicate if this is a subscribed email
 		sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
 			var contact = ThreadRowView.getContacts()[0];
 			if (res.all_subs != null && res.all_subs[contact.emailAddress] != null)
