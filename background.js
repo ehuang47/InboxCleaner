@@ -36,6 +36,7 @@ function parseMessagePart(part) {
 	return ""; // never found text/html
 }
 
+// after parsing text html into a DOM element, use query selectors to extract the unsub link
 function getUnsubLink(html) {
 	var node_list = html.querySelectorAll("a");
 	for (let i = 0; i < node_list.length; i++) {
@@ -52,6 +53,7 @@ function getUnsubLink(html) {
 	return null;
 }
 
+// some email headers contain an unsub link
 function getHeaderUnsubLink(headers) {
 	for (var i in headers) {
 		let header = headers[i];
@@ -64,6 +66,8 @@ function getHeaderUnsubLink(headers) {
 	}
 	return null;
 }
+
+// look in email headers to find the sender name and email
 function getSender(headers) {
 	for (var i in headers) {
 		let header = headers[i];
@@ -151,7 +155,8 @@ async function getThreads() {
 		pg_token = res.nextPageToken;
 		promises.push(extractThreadData(res.threads));
 	}
-	// ! await to make sure we store the next page token in the thread list. Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
+	// ! await to make sure we store the next page token in the thread list.
+	// ! Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
 	return new Promise((resolve, reject) => {
 		resolve(
 			Promise.all(promises).then((res) => {
@@ -185,6 +190,7 @@ chrome.runtime.onConnect.addListener((port) => {
 				if (msg.message === "sync") {
 					start = new Date().getTime();
 					redundant_emails = false; // reset bool for every sync request
+					// see if we've synced before, and use the existing subscriber list & sync time
 					chrome.storage.local.get(["all_subs", "last_synced"], (res) => {
 						// console.log(res);
 						if (Object.keys(res).length != 0) {
@@ -197,6 +203,8 @@ chrome.runtime.onConnect.addListener((port) => {
 						}); // updates the subscriber list into storage
 					});
 				}
+
+				// mostly for testing, if you need to clear out subscriber list
 				if (msg.message === "reset") {
 					chrome.storage.local.clear();
 					all_subs = {};
