@@ -219,17 +219,6 @@ chrome.runtime.onConnect.addListener((port) => {
 			port = null; // same as port.onDisconnect.removeListener()
 		});
 	}
-
-	if (port.name === "popup") {
-		port.postMessage({ text: "hello" });
-		port.onMessage.addListener((msg, resPort) => {
-			console.log("popup responded: \n", msg);
-		});
-		// gets rid of listeners when disconnected?
-		port.onDisconnect.addListener(() => {
-			port = null; // same as port.onDisconnect.removeListener()
-		});
-	}
 });
 
 //* Gmail API OAuth2 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

@@ -93,3 +93,9 @@
 
 - I thought I was clever by checking email headers for the sender (to see if we've already scanned their email before) to filter out earlier and improve performance. It caused more errors and underreported how many subscriptions there were. Thankfully for github commit reversions, I got rid of that.
 - I learned that I need to catch all my promises or the extension will crash, and I learned that not all header senders were uniform.
+
+## 2021-12-21
+
+- Removed test files (popup script and page, jquery script, css folder).
+  - Removed related code in background and content script.
+- Added a flow document to explain the self-defined functions and the chronological execution of code during user interaction.
