@@ -5,7 +5,7 @@
   "version": "1.0", 
   "content_scripts":[{
     "matches": ["https://*.google.com/*"],
-    "js":["js/inboxsdk.js", "js/jquery-3.1.1.min.js", "js/content.js"]
+    "js":["js/inboxsdk.js", "js/content.js"]
   }],
   "background":{
     "persistent": false,
@@ -15,10 +15,6 @@
   "oauth2": {
     "client_id": "142584390652-vomcgmkmgsh6v92j9i8c4eg74pil19sd.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/gmail.modify"]
-  },
-  "page_action":{
-    "default_title": "G-Manager",
-    "default_popup": "popup.html"
   },
   "icons":{
     "128": "images/gman.png"

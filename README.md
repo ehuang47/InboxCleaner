@@ -1,4 +1,5 @@
 # G-Manager
+
 ## Description
 
 > G-Manager is a v2 manifest-based Chrome extension that parses a user's Gmail inbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
@@ -11,8 +12,9 @@
 ## Features
 
 As of 12/17/2021, G-Manager only supports the following:
+
 - `Sync Now` is a button that will begin gathering the subscribed emails from your inbox.
-- `Reset` is the clickable instructions that will empty the browser storage of all email data.
+- `Reset` is the clickable 'instructions' paragraph that will empty the browser storage of all email data.
 - `Unsubscribe` is the clickable text that navigates you to the url where you can submit the unsubscription form.
 
 ## Bugs & Issues
@@ -23,7 +25,7 @@ As of 12/17/2021, G-Manager only supports the following:
 
 ## To-Do
 
-- Phase out InboxSDK by writing and inject custom HTML/CSS into Gmail to make v3 migration simpler.
+- Phase out InboxSDK by writing and injecting custom HTML/CSS into Gmail to make v3 migration simpler.
   - Implement a way to select certain entries and delete them from the subcription list.
   - Catch all promises.
   - Relocate the unsubscribe button closer to the email.
@@ -33,3 +35,4 @@ As of 12/17/2021, G-Manager only supports the following:
 - Implement popup notification that explains to users why we need permisisons to read their emails.
 - Syncing will display a 'loading bar' that approximates % how close to completion based on query rate.
 - Apply for Gmail to increase query rate quota?
+- Convert to typescript
