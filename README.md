@@ -1,8 +1,16 @@
-# G-Manager
+<h1 align="center">
+<sub>
+<img  src="images/gman.png" height="38" width="38">
+</sub>
+G-Manager
+</h1>
 
-## Description
+> A v2 manifest-based Chrome extension that parses a user's Gmail inbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
 
-> G-Manager is a v2 manifest-based Chrome extension that parses a user's Gmail inbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
+- [Technologies](#technologies)
+- [Features](#features)
+- [Bugs & Issues](#bugs--issues)
+- [To-Do](#to-do)
 
 ## Technologies
 
