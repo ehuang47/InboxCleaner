@@ -1,3 +1,17 @@
+- [Hierarchy](#hierarchy)
+- [Modules](#modules)
+  - [content.js](#contentjs)
+  - [background.js](#backgroundjs)
+- [Execution Flow](#execution-flow)
+
+# Hierarchy
+
+- images
+  - gman.png
+- js
+  - background.js, content,js, inboxsdk.js
+- README.md, changelog.md, flow.md, manifest.json
+
 # Modules
 
 ## content.js

@@ -99,3 +99,10 @@
 - Removed test files (popup script and page, jquery script, css folder).
   - Removed related code in background and content script.
 - Added a flow document to explain the self-defined functions and the chronological execution of code during user interaction.
+- Adding table of contents for markdown pages, rearranging file locations.
+
+## 2021-12-22
+
+- Listed file hierarchy in flow.md
+- Moved background.js to /js folder.
+- Polishing README.md with html section to display logo.
