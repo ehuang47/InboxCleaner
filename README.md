@@ -2,7 +2,7 @@
 <sub>
 <img  src="images/gman.png" height="38" width="38">
 </sub>
-G-Manager
+InboxCleaner
 </h1>
 
 > A v2 manifest-based Chrome extension that parses a user's Gmail inbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
@@ -19,7 +19,7 @@ G-Manager
 
 ## Features
 
-As of 12/17/2021, G-Manager only supports the following:
+As of 12/17/2021, InboxCleaner only supports the following:
 
 - `Sync Now` is a button that will begin gathering the subscribed emails from your inbox.
 - `Reset` is the clickable 'instructions' paragraph that will empty the browser storage of all email data.
