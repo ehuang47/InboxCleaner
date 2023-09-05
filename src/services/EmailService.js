@@ -1,4 +1,4 @@
-import * as c from "./constants";
+import * as c from "../constants";
 
 // https://exceptionshub.com/gmail-api-parse-message-content-base64-decoding-with-javascript.html
 // https://stackoverflow.com/questions/24811008/gmail-api-decoding-messages-in-javascript

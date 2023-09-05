@@ -27,12 +27,6 @@
     "declarativeContent",
     "scripting"
   ],
-  "web_accessible_resources": [
-    {
-      "resources": ["scripts/constants.js"],
-      "matches": ["https://*.google.com/*"]
-    }
-  ],
   "host_permissions": [
 		"https://mail.google.com/*",
 		"https://inbox.google.com/*",
