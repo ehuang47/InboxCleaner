@@ -1,10 +1,11 @@
 import * as c from "./constants";
+
+// https://exceptionshub.com/gmail-api-parse-message-content-base64-decoding-with-javascript.html
+// https://stackoverflow.com/questions/24811008/gmail-api-decoding-messages-in-javascript
 // recursion to traverse the messageparts and acquire the decoded text/html
 function parseMessagePart(part) {
   // console.log(part.mimeType, "\n", part.body, "\n", part.parts);
   if (part == null || part.mimeType === "text/plain") return "";
-  // https://exceptionshub.com/gmail-api-parse-message-content-base64-decoding-with-javascript.html
-  // https://stackoverflow.com/questions/24811008/gmail-api-decoding-messages-in-javascript
   if (part.mimeType === "text/html")
     return atob(part.body.data.replace(/-/g, "+").replace(/_/g, "/"));
 
@@ -112,36 +113,43 @@ async function extractThreadData(storage, threads) {
 
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 export async function getThreads() {
-  const storage = await chrome.storage.local.get([c.ALL_SUBS,
-  c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+  try {
+    const storage = await chrome.storage.local
+      .get([c.ALL_SUBS, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
 
-  storage.all_subs = storage.all_subs ?? {},
-    storage.last_synced = storage.last_synced ?? null,
-    storage.redundant_emails = storage.redundant_emails ?? false,
-    storage.start = storage.start ?? null;
+    storage.all_subs = storage.all_subs ?? {},
+      storage.last_synced = storage.last_synced ?? null,
+      storage.redundant_emails = storage.redundant_emails ?? false,
+      storage.start = storage.start ?? null;
 
-  let maxThreads = 1500,
-    thread_count = 0,
-    pg_token = "",
-    promises = [];
-  while (pg_token != null && thread_count < maxThreads && !storage.redundant_emails) {
-    var threadDetails = await gapi.client.gmail.users.threads.list({
-      userId: "me",
-      pageToken: pg_token,
-      maxResults: 500,
+    let maxThreads = 1500,
+      thread_count = 0,
+      pg_token = "",
+      promises = [];
+    while (pg_token != null && thread_count < maxThreads && !storage.redundant_emails) {
+      var threadDetails = await gapi.client.gmail.users.threads.list({
+        userId: "me",
+        pageToken: pg_token,
+        maxResults: 500,
+      }).catch(e => { console.warn("email service getting threads error", e); });
+      var res = threadDetails.result;
+      thread_count += res.threads.length;
+      pg_token = res.nextPageToken;
+      promises.push(extractThreadData(storage, res.threads));
+    }
+    // ! await to make sure we store the next page token in the thread list.
+    // ! Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
+
+    await Promise.all(promises);
+    console.log(all_subs);
+    chrome.storage.local.set({
+      [c.ALL_SUBS]: storage.all_subs,
+      last_synced: new Date().getTime()
     });
-    var res = threadDetails.result;
-    thread_count += res.threads.length;
-    pg_token = res.nextPageToken;
-    promises.push(extractThreadData(storage, res.threads));
+    let elapsed = new Date().getTime() - storage.start;
+    var mins = elapsed / 60000;
+    console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
+  } catch (e) {
+    console.warn("error getThreads", e);
   }
-  // ! await to make sure we store the next page token in the thread list.
-  // ! Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
-
-  await Promise.all(promises);
-  console.log(all_subs);
-  chrome.storage.local.set({ [c.ALL_SUBS]: storage.all_subs, last_synced: new Date().getTime() });
-  let elapsed = new Date().getTime() - storage.start;
-  var mins = elapsed / 60000;
-  console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
 }

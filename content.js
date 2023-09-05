@@ -1,23 +1,12 @@
+import * as c from "./scripts/constants";
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log(sender.tab ?
     "from a content script:" + sender.tab.url :
     "from the extension");
 
-  if (request.message === "updated_subscribers") window.location.reload(true);
+  if (request.message === c.UPDATED_SUBSCRIBERS) window.location.reload(true);
   sendResponse();
 });
-
-async function getFromLocal(key) {
-  return new Promise((resolve, reject) => {
-    try {
-      chrome.storage.local.get(key, (value) => {
-        resolve(value);
-      });
-    } catch (ex) {
-      reject(ex);
-    }
-  });
-}
 
 function instructionHTML() {
   var parent = document.createElement("div");
@@ -43,8 +32,9 @@ function instructionHTML() {
 }
 
 async function loadInboxSDK() {
-  var res = await getFromLocal(["all_subs", "last_synced"]);
-  InboxSDK.load(2, "sdk_gmanager_284293dc99").then(function (sdk) {
+  try {
+    var res = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
+    const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
     sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
       var last_synced = "";
@@ -90,7 +80,7 @@ async function loadInboxSDK() {
         titleLinkText: "Sync Now",
         onTitleLinkClick: () => {
           // port.postMessage({ message: "sync" });
-          chrome.runtime.sendMessage({ message: "sync" });
+          chrome.runtime.sendMessage({ message: c.SYNC });
         },
         tableRows: all_subs,
         contentElement: instructionHTML(),
@@ -107,15 +97,15 @@ async function loadInboxSDK() {
           subs[key][2] = false;
           chrome.storage.local.set({ all_subs: subs });
           // port.postMessage({ message: "open_new_tab", url: subs[key][1] });
-          chrome.runtime.sendMessage({ message: "open_new_tab", url: subs[key][1] });
+          chrome.runtime.sendMessage({ message: c.OPEN_NEW_TAB, url: subs[key][1] });
         });
       }
 
       let test = document.querySelector(".inboxsdk__resultsSection .zE");
       test.children[0].addEventListener("click", (e) => {
         console.log("clicked subscription heading, resetting");
-        port.postMessage({ message: "reset" });
-        chrome.runtime.sendMessage({ message: "reset" });
+        // port.postMessage({ message: c.RESET });
+        chrome.runtime.sendMessage({ message: c.RESET });
       });
     });
 
@@ -135,7 +125,9 @@ async function loadInboxSDK() {
             backgroundColor: "pink",
           });
     });
-  });
+  } catch (e) {
+    console.warn("content.js error", e);
+  }
 }
 
 loadInboxSDK();
