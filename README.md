@@ -9,8 +9,7 @@ InboxCleaner
 
 - [Technologies](#technologies)
 - [Features](#features)
-- [Issues](#issues)
-- [Documentation](#documentation)
+- [Other](#other)
 
 ## Technologies
 
@@ -25,10 +24,7 @@ As of 12/17/2021, InboxCleaner only supports the following:
 - `Reset` is the clickable 'instructions' paragraph that will empty the browser storage of all email data.
 - `Unsubscribe` is the clickable text that navigates you to the url where you can submit the unsubscription form.
 
-## Issues
+## Other
 
-See [Issues](https://github.com/ehuang47/InboxCleaner/issues).
-
-## Documentation
-
-See our [Wiki](https://github.com/ehuang47/InboxCleaner/wiki).
+View a list of the current [issues](https://github.com/ehuang47/InboxCleaner/issues) or the [project](https://github.com/users/ehuang47/projects/1/views/1?groupedBy%5BcolumnId%5D=56045934).
+View more documentation on the [wiki](https://github.com/ehuang47/InboxCleaner/wiki).
