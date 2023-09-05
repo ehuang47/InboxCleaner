@@ -1,15 +1,15 @@
 {
-  "manifest_version": 2,  
-  "name": "G-Manager", 
-  "description": "Easily mass-delete or unsubscribe from undesired emails.",
+  "manifest_version": 3,  
+  "name": "InboxCleaner", 
+  "description": "View and manage a list of email subscriptions on Gmail.",
   "version": "1.0", 
   "content_scripts":[{
     "matches": ["https://*.google.com/*"],
-    "js":["js/inboxsdk.js", "js/content.js"]
+    "js":["inboxsdk.js", "content.js"]
   }],
   "background":{
-    "persistent": false,
-    "scripts": ["js/background.js"]
+    "service_worker": "service_worker.js",
+    "type": "module"
   },
   "content_security_policy": "script-src 'self' https://apis.google.com 'unsafe-eval'; object-src 'self'",
   "oauth2": {
@@ -23,9 +23,11 @@
     "activeTab",
     "storage",
     "identity",
-    "declarativeContent",
-    "https://mail.google.com/*",
-    "https://inbox.google.com/*",
-    "https://www.googleapis.com/*"
-  ]
+    "declarativeContent"
+  ],
+  "host_permissions": [
+		"https://mail.google.com/*",
+		"https://inbox.google.com/*",
+		"https://www.googleapis.com/*"
+	]
 }

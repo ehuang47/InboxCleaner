@@ -106,3 +106,13 @@
 - Listed file hierarchy in flow.md
 - Moved background.js to /js folder.
 - Polishing README.md with html section to display logo.
+
+## 2023-09-04
+
+- Moving main scripts to root and modules to `/scripts`
+- Updating to v3 manifest, changing `background.js` to `service_worker.js`
+  - Getting rid of any global variables and scoping them within functions
+  - Taking out any functions related to emails, thread parsing to `EmailService.js`
+    - Had to update their parameters because they were impure and updated global variables
+- Migrating from long-lived port connection to one-time messaging because service_workers should not add listeners in callbacks/promises.
+- 
