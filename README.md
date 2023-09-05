@@ -9,8 +9,8 @@ InboxCleaner
 
 - [Technologies](#technologies)
 - [Features](#features)
-- [Bugs \& Issues](#bugs--issues)
-- [To-Do](#to-do)
+- [Issues](#issues)
+- [Documentation](#documentation)
 
 ## Technologies
 
@@ -25,22 +25,10 @@ As of 12/17/2021, InboxCleaner only supports the following:
 - `Reset` is the clickable 'instructions' paragraph that will empty the browser storage of all email data.
 - `Unsubscribe` is the clickable text that navigates you to the url where you can submit the unsubscription form.
 
-## Bugs & Issues
+## Issues
 
-- Some emails can have invalid or expired unsubscription links and will still be accepted.
-- Cannot auto-delete emails with current permissions for security reasons.
-- Some companies or entities use automated service to generate hundreds of unique emails.
+See [Issues](https://github.com/ehuang47/InboxCleaner/issues).
 
-## To-Do
+## Documentation
 
-- Phase out InboxSDK by writing and injecting custom HTML/CSS into Gmail to make v3 migration simpler.
-  - Implement a way to select certain entries and delete them from the subcription list.
-  - Catch all promises.
-  - Relocate the unsubscribe button closer to the email.
-  - Clicking the email auto searches for it in the inbox.
-- Modularize .js functions into other files.
-- Find a more secure way to load gapi-client than to send XMLHTTPRequest and eval() result.
-- Implement popup notification that explains to users why we need permisisons to read their emails.
-- Syncing will display a 'loading bar' that approximates % how close to completion based on query rate.
-- Apply for Gmail to increase query rate quota?
-- Convert to typescript
+See our [Wiki](https://github.com/ehuang47/InboxCleaner/wiki).
