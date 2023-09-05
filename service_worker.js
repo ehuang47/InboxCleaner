@@ -1,4 +1,5 @@
 import { getThreads } from "./scripts/EmailService";
+import * as c from "./scripts/constants";
 // if es6 import fails, use dynamic import? https://stackoverflow.com/questions/48104433/how-to-import-es6-modules-in-content-script-for-chrome-extension
 // https://developer.chrome.com/docs/extensions/migrating/to-service-workers/#register-listeners says it should work, just make sure type:module is specified
 
@@ -22,46 +23,41 @@ chrome.runtime.onInstalled.addListener((details) => {
   });
 });
 
-var gapi_loaded = false;
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  const storage = await chrome.storage.local.get([c.GAPI_LOADED, c.LAST_SYNCED,
+  c.REDUNDANT_EMAILS, c.START]);
 
-const shared = {
-  all_subs: {},
-  last_synced: null,
-  redundant_emails: false,
-  start: null
-};
+  let gapi_loaded = storage.gapi_loaded ?? false,
+    last_synced = storage.last_synced ?? null,
+    redundant_emails = storage.redundant_emails ?? false,
+    start = storage.start ?? null;
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+
   console.log("service_worker chrome.runtime.onMessage.sender", sender);
   // todo: if it makes a difference, check sender = content.js, then wrap both if statements
-  if (message.message === "open_new_tab") { //! guarantee the message "open_new_tab" only comes from content.js
+  if (message.message === c.OPEN_NEW_TAB) {
     chrome.tabs.create({ url: message.url });
   }
 
   if (gapi_loaded) {
-    if (message.message === "sync") {
-      shared.start = new Date().getTime();
-      shared.redundant_emails = false; // reset bool for every sync request
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+
+    if (message.message === c.SYNC) {
+      start = new Date().getTime();
+      redundant_emails = false; // reset bool for every sync request
+      chrome.storage.local.set({ start, redundant_emails });
+
       // see if we've synced before, and use the existing subscriber list & sync time
-      chrome.storage.local.get(["all_subs", "last_synced"], (res) => {
-        // console.log(res);
-        if (Object.keys(res).length != 0) {
-          shared.all_subs = res.all_subs;
-          shared.last_synced = res.last_synced;
-        }
-        console.log("Sync in progress. Last synced at: ", shared.last_synced);
-        getThreads(shared).then(() => {
-          port.postMessage({ message: "updated_subscribers" });
-        }); // updates the subscriber list into storage
-      });
+      // if (Object.keys(all_subs).length != 0)
+      console.log("Sync in progress. Last synced at: ", last_synced);
+      await getThreads();
+      chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
     }
 
     // mostly for testing, if you need to clear out subscriber list
-    if (message.message === "reset") {
+    if (message.message === c.RESET) {
       chrome.storage.local.clear();
-      shared.all_subs = {};
-      shared.last_synced = null;
-      port.postMessage({ message: "updated_subscribers" });
+      chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
     }
     // TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
   }
@@ -76,20 +72,22 @@ chrome.identity.getAuthToken({ interactive: true }, (token) => {
   window.gapi_onload = () => {
     // runs after api client is remote-loaded
     // load APIs with discovery, set chrome identity oauth token
-    gapi.client.load("https://gmail.googleapis.com/$discovery/rest?version=v1").then(() => {
-      gapi_loaded = true;
+    gapi.client.load(c.DISCOVERY_URL).then(() => {
+      chrome.storage.local.set({ [c.GAPI_LOADED]: true });
       gapi.client.setToken({ access_token: token });
     });
   };
 
   // make http request to load the API client script
+  //todo improve extension security, can no longer load remote code
+
   var request = new XMLHttpRequest();
   request.onreadystatechange = function () {
     if (request.readyState !== 4 || request.status !== 200) return;
     eval(request.responseText); //! UNSAFE
   };
 
-  request.open("GET", "https://apis.google.com/js/client.js");
+  request.open("GET", c.GAPI_CLIENT_URL);
   request.send();
 });
 

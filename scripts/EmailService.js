@@ -1,4 +1,4 @@
-
+import * as c from "./constants";
 // recursion to traverse the messageparts and acquire the decoded text/html
 function parseMessagePart(part) {
   // console.log(part.mimeType, "\n", part.body, "\n", part.parts);
@@ -64,68 +64,67 @@ function getSender(headers) {
 }
 
 // grab every thread, extract its messages' contents, and store in the subscription dictionary
-function extractThreadData(shared, threads) {
-  let promises = [];
-  for (i in threads) {
-    // console.log(threads[i]);
-    promises.push(
-      gapi.client.gmail.users.threads
-        .get({
-          userId: "me",
-          id: threads[i].id,
-        })
-        .then((res) => {
-          console.log("Received thread" + threads[i].id + ":\n", res);
-          let msg = res.result.messages[0];
-          // message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
-          if (msg.internalDate < shared.last_synced) {
-            // an old email thread that we've already scanned, so set redundant_emails to true
-            shared.redundant_emails = true;
-            return;
-          }
-          var payload = msg.payload;
-          var href = getHeaderUnsubLink(payload.headers);
-          if (href == null) {
-            // when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
-            var parsed_html = new DOMParser().parseFromString(
-              parseMessagePart(payload),
-              "text/html"
-            );
-            href = getUnsubLink(parsed_html);
-          }
+async function extractThreadData(storage, threads) {
+  const promises = threads.map((thread) => {
+    return gapi.client.gmail.users.threads.get({
+      userId: "me",
+      id: thread.id,
+    }).then(res => {
+      console.log("Received thread" + thread.id + ":\n", res);
+      let msg = res.result.messages[0];
+      // message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
+      if (msg.internalDate < storage.last_synced) {
+        // an old email thread that we've already scanned, so set redundant_emails to true
+        storage.redundant_emails = true;
+        return;
+      }
+      var payload = msg.payload;
+      var href = getHeaderUnsubLink(payload.headers);
+      if (href == null) {
+        // when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
+        var parsed_html = new DOMParser().parseFromString(
+          parseMessagePart(payload),
+          "text/html"
+        );
+        href = getUnsubLink(parsed_html);
+      }
 
-          if (href != null) {
-            // only grab sender information when an unsub link is found
-            var sender = getSender(payload.headers);
-            // console.log(sender);
-            // console.log("Unsubscribe at:", href);
-            // console.log(parsed_html);
-            let email = sender.email;
-            // console.log(email, shared.all_subs[email]);
-            if (shared.all_subs[email] == null) {
-              // only record sender info if there is no existing entry
-              shared.all_subs[email] = [sender.name, href, true];
-            }
-          }
-        })
-        .catch((e) => {
-          console.log("Error: " + e);
-        })
-    );
-  }
-  // returns promise that resolves only when all of the other callbacks of thread.get complete
-  return new Promise((resolve, reject) => {
-    resolve(Promise.all(promises));
+      if (href != null) {
+        // only grab sender information when an unsub link is found
+        var sender = getSender(payload.headers);
+        // console.log(sender);
+        // console.log("Unsubscribe at:", href);
+        // console.log(parsed_html);
+        let email = sender.email;
+        // console.log(email, storage.all_subs[email]);
+        if (storage.all_subs[email] == null) {
+          // only record sender info if there is no existing entry
+          storage.all_subs[email] = [sender.name, href, true];
+        }
+      }
+    }).catch((e) => {
+      console.log("Error: " + e);
+    });
   });
+  // returns promise that resolves only when all of the other callbacks of thread.get complete
+  return Promise.all(promises);
 }
 
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
-export async function getThreads(shared) {
+export async function getThreads() {
+  const storage = await chrome.storage.local.get([c.ALL_SUBS,
+  c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+
+  storage.all_subs = storage.all_subs ?? {},
+    storage.last_synced = storage.last_synced ?? null,
+    storage.redundant_emails = storage.redundant_emails ?? false,
+    storage.start = storage.start ?? null;
+
   let maxThreads = 1500,
     thread_count = 0,
     pg_token = "",
     promises = [];
-  while (pg_token != null && thread_count < maxThreads && !shared.redundant_emails) {
+  while (pg_token != null && thread_count < maxThreads && !storage.redundant_emails) {
     var threadDetails = await gapi.client.gmail.users.threads.list({
       userId: "me",
       pageToken: pg_token,
@@ -134,19 +133,15 @@ export async function getThreads(shared) {
     var res = threadDetails.result;
     thread_count += res.threads.length;
     pg_token = res.nextPageToken;
-    promises.push(extractThreadData(shared, res.threads));
+    promises.push(extractThreadData(storage, res.threads));
   }
   // ! await to make sure we store the next page token in the thread list.
   // ! Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
-  return new Promise((resolve, reject) => {
-    resolve(
-      Promise.all(promises).then((res) => {
-        console.log(shared.all_subs);
-        chrome.storage.local.set({ all_subs: shared.all_subs, last_synced: new Date().getTime() });
-        let elapsed = new Date().getTime() - shared.start;
-        var mins = elapsed / 60000;
-        console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
-      })
-    );
-  });
+
+  await Promise.all(promises);
+  console.log(all_subs);
+  chrome.storage.local.set({ [c.ALL_SUBS]: storage.all_subs, last_synced: new Date().getTime() });
+  let elapsed = new Date().getTime() - storage.start;
+  var mins = elapsed / 60000;
+  console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
 }

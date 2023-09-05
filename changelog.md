@@ -115,4 +115,6 @@
   - Taking out any functions related to emails, thread parsing to `EmailService.js`
     - Had to update their parameters because they were impure and updated global variables
 - Migrating from long-lived port connection to one-time messaging because service_workers should not add listeners in callbacks/promises.
-- 
+- Moved string constants to a constants file
+- Switching more code to promise and async-await style
+- Updating "global variables" style to use chrome storage because service workers are ephemeral
