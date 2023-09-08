@@ -11,10 +11,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       break;
     };
-    case c.AUTH_USER: {
-      window.location = request.url;
-      break;
-    };
     default:
       console.log("Unable to handle request of type:", request.message);
   }
@@ -29,7 +25,6 @@ async function setUpAuth() {
 
   if (!storage.hasOwnProperty(c.AUTH_STARTED)) { // has not processed OAUTH
     const res = await chrome.runtime.sendMessage({ message: c.CONTENT_INIT });
-    console.log(res);
 
     if (res.message = c.AUTH_USER) { // we expect the user's redirect url
       console.log(res.url);

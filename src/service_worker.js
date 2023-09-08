@@ -24,48 +24,51 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // handle communication between content script
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message, sender);
-  try {
-    const storage = await chrome.storage.local
-      .get([c.GAPI_LOADED, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+  (async () => {
+    try {
+      const storage = await chrome.storage.local
+        .get([c.GAPI_LOADED, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
 
-    let gapi_loaded = storage.gapi_loaded ?? false,
-      last_synced = storage.last_synced ?? null,
-      redundant_emails = storage.redundant_emails ?? false,
-      start = storage.start ?? null;
+      let gapi_loaded = storage.gapi_loaded ?? false,
+        last_synced = storage.last_synced ?? null,
+        redundant_emails = storage.redundant_emails ?? false,
+        start = storage.start ?? null;
 
-    await handleAuthUser(message, sendResponse);
+      await handleAuthUser(message, sendResponse);
 
-    if (message.message === c.OPEN_NEW_TAB) {
-      chrome.tabs.create({ url: message.url });
-    }
-
-    if (gapi_loaded) {
-      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-
-      if (message.message === c.SYNC) {
-        start = new Date().getTime();
-        redundant_emails = false; // reset bool for every sync request
-        chrome.storage.local.set({ start, redundant_emails });
-
-        // see if we've synced before, and use the existing subscriber list & sync time
-        // if (Object.keys(all_subs).length != 0)
-        console.log("Sync in progress. Last synced at: ", last_synced);
-        await getThreads();
-        chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+      if (message.message === c.OPEN_NEW_TAB) {
+        chrome.tabs.create({ url: message.url });
       }
 
-      // mostly for testing, if you need to clear out subscriber list
-      if (message.message === c.RESET) {
-        chrome.storage.local.clear();
-        chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+      if (gapi_loaded) {
+        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+
+        if (message.message === c.SYNC) {
+          start = new Date().getTime();
+          redundant_emails = false; // reset bool for every sync request
+          chrome.storage.local.set({ start, redundant_emails });
+
+          // see if we've synced before, and use the existing subscriber list & sync time
+          // if (Object.keys(all_subs).length != 0)
+          console.log("Sync in progress. Last synced at: ", last_synced);
+          await getThreads();
+          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+        }
+
+        // mostly for testing, if you need to clear out subscriber list
+        if (message.message === c.RESET) {
+          chrome.storage.local.clear();
+          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+        }
+        // TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
       }
-      // TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
+    } catch (e) {
+      console.warn("error runtime.onMessage.listener", e);
     }
-  } catch (e) {
-    console.warn("error runtime.onMessage.listener", e);
-  }
+  })();
+  return true;
 });
 
 //* Gmail API OAuth2
