@@ -7,7 +7,8 @@ module.exports = {
   entry: {
     content: './src/content.js',
     pageWorld: '@inboxsdk/core/pageWorld.js',
-    background: '@inboxsdk/core/background.js',
+    // background: '@inboxsdk/core/background.js',
+    service_worker: "./src/service_worker.js"
   },
   module: {
     rules: [

@@ -6,41 +6,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     "from a content script:" + sender.tab.url :
     "from the extension");
 
+  switch (request.message) {
+    case c.UPDATED_SUBSCRIBERS: {
+
+      break;
+    };
+    case c.AUTH_USER: {
+      window.location = request.url;
+      break;
+    };
+    default:
+      console.log("Unable to handle request of type:", request.message);
+  }
   if (request.message === c.UPDATED_SUBSCRIBERS) window.location.reload(true);
+
   sendResponse();
 });
 
-function instructionHTML() {
-  var parent = document.createElement("div");
-  var notice = document.createElement("p");
-  notice.innerHTML =
-    "If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, follow the steps below.";
-  parent.appendChild(notice);
+async function setUpAuth() {
+  const storage = await chrome.storage.local.get([c.AUTH_STARTED, c.AUTH_TOKEN]);
+  if (storage.hasOwnProperty(c.AUTH_TOKEN)) return; // no need to continue
 
-  var instructions = document.createElement("ol");
-  parent.appendChild(instructions);
-  var steps = [
-    "Copy and paste their email address into the search bar and hit enter.",
-    "Check the box to select all emails, then select the option to 'Select all conversations that match this search'.",
-    "With all emails selected, click the trash bin 'Delete' icon. ",
-  ];
-  for (var i = 0; i < 3; i++) {
-    let step = document.createElement("li");
-    step.setAttribute("id", "li" + i);
-    step.innerHTML = steps[i];
-    instructions.appendChild(step);
+  if (!storage.hasOwnProperty(c.AUTH_STARTED)) { // has not processed OAUTH
+    const res = await chrome.runtime.sendMessage({ message: c.CONTENT_INIT });
+    console.log(res);
+
+    if (res.message = c.AUTH_USER) { // we expect the user's redirect url
+      console.log(res.url);
+      await chrome.storage.local.set({ [c.AUTH_STARTED]: true });
+      window.location = res.url;
+      console.log("after window.location redirect", window.location);
+    }
+  } else { // in the middle of OAUTH, do not have token
+    // assume we have been redirected here, check for access token
+    console.log(window.location, window.location.hash, window.location.hash.includes("token"));
+    await chrome.storage.local.remove(c.AUTH_STARTED);
+    await chrome.runtime.sendMessage({ message: c.AUTH_USER, hash: window.location.hash });
+    // get response from service worker, token is stored in storage.auth_token
   }
-  return parent;
 }
-
-console.log(c);
-
-// InboxSDK.load(2, "sdk_gmanager_284293dc99").then((sdk) => {
-
-// });
 
 (async function () {
   try {
+    await setUpAuth();
+
     var res = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
 
@@ -151,3 +160,27 @@ console.log(c);
     console.warn("content.js error", e);
   }
 })();
+
+
+function instructionHTML() {
+  var parent = document.createElement("div");
+  var notice = document.createElement("p");
+  notice.innerHTML =
+    "If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, follow the steps below.";
+  parent.appendChild(notice);
+
+  var instructions = document.createElement("ol");
+  parent.appendChild(instructions);
+  var steps = [
+    "Copy and paste their email address into the search bar and hit enter.",
+    "Check the box to select all emails, then select the option to 'Select all conversations that match this search'.",
+    "With all emails selected, click the trash bin 'Delete' icon. ",
+  ];
+  for (var i = 0; i < 3; i++) {
+    let step = document.createElement("li");
+    step.setAttribute("id", "li" + i);
+    step.innerHTML = steps[i];
+    instructions.appendChild(step);
+  }
+  return parent;
+}

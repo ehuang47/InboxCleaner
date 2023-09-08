@@ -13,7 +13,7 @@ InboxCleaner
 
 ## Technologies
 
-- InboxSDK (v2)
+- InboxSDK (v2.0.1)
 - Gmail API (v1)
 
 ## Features

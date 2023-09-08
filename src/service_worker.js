@@ -1,5 +1,7 @@
-// import { getThreads } from "./scripts/EmailService";
-// import * as c from "./scripts/constants";
+import "@inboxsdk/core/background.js";
+import { getThreads } from "./services/EmailService";
+import * as c from "./constants";
+import AuthService from "./services/AuthService";
 
 // when extension is installed, updated, or chrome is updated
 chrome.runtime.onInstalled.addListener((details) => {
@@ -21,8 +23,9 @@ chrome.runtime.onInstalled.addListener((details) => {
   });
 });
 
+// handle communication between content script
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  // console.log(message, sender, sendResponse);
+  console.log(message, sender);
   try {
     const storage = await chrome.storage.local
       .get([c.GAPI_LOADED, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
@@ -32,9 +35,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       redundant_emails = storage.redundant_emails ?? false,
       start = storage.start ?? null;
 
+    await handleAuthUser(message, sendResponse);
 
-    console.log("service_worker chrome.runtime.onMessage.sender", sender);
-    // todo: if it makes a difference, check sender = content.js, then wrap both if statements
     if (message.message === c.OPEN_NEW_TAB) {
       chrome.tabs.create({ url: message.url });
     }
@@ -66,31 +68,30 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-//* Gmail API OAuth2 
+//* Gmail API OAuth2
 // TODO: have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
-// https://gist.github.com/omarstreak/7908035c91927abfef59 --> reference code
-// https://gist.github.com/sumitpore/47439fcd86696a71bf083ede8bbd5466
-// https://stackoverflow.com/questions/18681803/loading-google-api-javascript-client-library-into-chrome-extension
+
+async function handleAuthUser(message, sendResponse) {
+  if (message.message === c.CONTENT_INIT) {
+    // const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    // chrome.tabs.sendMessage(tab.id, { message: c.AUTH_USER, url: redirectUrl });
+    console.log("service worker received content init");
+    const redirectUrl = AuthService.shared.getAuthRedirectUrl();
+    sendResponse({ message: c.AUTH_USER, url: redirectUrl });
+  } else if (message.message === c.AUTH_USER) {
+    const token = AuthService.shared.retrieveAccessToken(message.hash);
+    await AuthService.shared.storeAccessToken(token);
+  }
+}
+
 // chrome.identity.getAuthToken({ interactive: true }, (token) => {
-//   window.gapi_onload = () => {
-//     // runs after api client is remote-loaded
-//     // load APIs with discovery, set chrome identity oauth token
-//     gapi.client.load(c.DISCOVERY_URL).then(() => {
-//       chrome.storage.local.set({ [c.GAPI_LOADED]: true });
-//       gapi.client.setToken({ access_token: token });
-//     });
-//   };
-
-//   // make http request to load the API client script
-//   //todo improve extension security, can no longer load remote code
-
-//   var request = new XMLHttpRequest();
-//   request.onreadystatechange = function () {
-//     if (request.readyState !== 4 || request.status !== 200) return;
-//     eval(request.responseText); //! UNSAFE
-//   };
-
-//   request.open("GET", c.GAPI_CLIENT_URL);
-//   request.send();
+  // global.gapi_onload = () => {
+  //   // runs after api client is remote-loaded
+  //   // load APIs with discovery, set chrome identity oauth token
+  //   gapi.client.load(c.DISCOVERY_URL).then(() => {
+  //     chrome.storage.local.set({ [c.GAPI_LOADED]: true });
+  //     gapi.client.setToken({ access_token: token });
+  //   });
+  // };
+  // console.log("finished registering window.gapi_onload");
 // });
-
