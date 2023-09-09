@@ -5,7 +5,7 @@ export const GAPI_LOADED = "gapi_loaded",
   REDUNDANT_EMAILS = "redundant_emails",
   START = "start",
   AUTH_STARTED = "auth_started",
-  AUTH_TOKEN = "auth_token";
+  ACCESS_TOKEN = "access_token";
 
 // message types
 

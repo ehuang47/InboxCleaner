@@ -5,39 +5,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log(sender.tab ?
     "from a content script:" + sender.tab.url :
     "from the extension");
-
-  switch (request.message) {
-    case c.UPDATED_SUBSCRIBERS: {
-
-      break;
-    };
-    default:
-      console.log("Unable to handle request of type:", request.message);
-  }
   if (request.message === c.UPDATED_SUBSCRIBERS) window.location.reload(true);
-
   sendResponse();
 });
 
 async function setUpAuth() {
-  const storage = await chrome.storage.local.get([c.AUTH_STARTED, c.AUTH_TOKEN]);
-  if (storage.hasOwnProperty(c.AUTH_TOKEN)) return; // no need to continue
+  const storage = await chrome.storage.local.get([c.AUTH_STARTED, c.ACCESS_TOKEN]);
+  if (storage.hasOwnProperty(c.ACCESS_TOKEN)) {
+    return; // no need to continue
+  }
 
   if (!storage.hasOwnProperty(c.AUTH_STARTED)) { // has not processed OAUTH
     const res = await chrome.runtime.sendMessage({ message: c.CONTENT_INIT });
 
+    console.log("sent content init message");
     if (res.message = c.AUTH_USER) { // we expect the user's redirect url
-      console.log(res.url);
       await chrome.storage.local.set({ [c.AUTH_STARTED]: true });
       window.location = res.url;
-      console.log("after window.location redirect", window.location);
     }
   } else { // in the middle of OAUTH, do not have token
     // assume we have been redirected here, check for access token
-    console.log(window.location, window.location.hash, window.location.hash.includes("token"));
+    // console.log(window.location.hash);
     await chrome.storage.local.remove(c.AUTH_STARTED);
     await chrome.runtime.sendMessage({ message: c.AUTH_USER, hash: window.location.hash });
-    // get response from service worker, token is stored in storage.auth_token
+    // get response from service worker, token is stored in storage.ACCESS_TOKEN
   }
 }
 

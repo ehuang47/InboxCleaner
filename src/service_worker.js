@@ -78,12 +78,12 @@ async function handleAuthUser(message, sendResponse) {
   if (message.message === c.CONTENT_INIT) {
     // const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     // chrome.tabs.sendMessage(tab.id, { message: c.AUTH_USER, url: redirectUrl });
-    console.log("service worker received content init");
     const redirectUrl = AuthService.shared.getAuthRedirectUrl();
+    console.log("service worker received content init", redirectUrl);
     sendResponse({ message: c.AUTH_USER, url: redirectUrl });
   } else if (message.message === c.AUTH_USER) {
-    const token = AuthService.shared.retrieveAccessToken(message.hash);
-    await AuthService.shared.storeAccessToken(token);
+    const urlMap = AuthService.shared.retrieveAccessToken(message.hash);
+    await AuthService.shared.storeAccessToken(urlMap);
   }
 }
 

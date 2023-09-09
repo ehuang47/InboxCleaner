@@ -10,23 +10,36 @@ export default class AuthService {
   constructor() { } // make private
 
   getAuthRedirectUrl() {
-    const clientId = "142584390652-vomcgmkmgsh6v92j9i8c4eg74pil19sd.apps.googleusercontent.com",
-      redirectUri = "https://mail.google.com/mail/u/0/#inbox",
+    const clientId = "142584390652-13klfjbscibla44rm9gnefu01u180hi6.apps.googleusercontent.com",
+      redirectUri = "https://mail.google.com",
       scope = "https://www.googleapis.com/auth/gmail.readonly",
       state = "my_state";
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&state=${state}`;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&state=${state}`;
     return authUrl;
   }
 
-  // expects window.location.hash
+  /* expects window.location.hash, with format:
+  '#state=my_state
+  &access_token=ya29.a0AfB_byB6kiQcBbhDuErGzyzb3Dt-OCDkC6psS91RidG0_27pDmDTazy0J4cc2_M6T-wkVrSeR5XlHUUQOxi27SXYui-Wvtyj_l4ayTxMl8zynzTN9wqyNjaFEw5V1Z2Up2X-jw8eydHIdaO95Ib-HklRLi3wy3q0PgaCgYKAXkSARESFQGOcNnCbV4CsauOPb0igw-XO1AewA0169
+  &token_type=Bearer
+  &expires_in=3599
+  &scope=https://www.googleapis.com/auth/gmail.readonly'
+  */
+
   retrieveAccessToken(urlHash) {
-    const accessToken = urlHash.substring(1).split('&')[0].split('=')[1];
-    console.log("retrieveAccessToken =", accessToken);
-    return accessToken;
+    console.log(urlHash);
+    const hash = urlHash.slice(1);
+    const map = hash.split('&').reduce((map, param) => {
+      const [k, v] = param.split("=");
+      map[k] = v;
+      return map;
+    }, {});
+    console.log("url map", map);
+    return map;
   }
 
-  async storeAccessToken(token) {
-    await chrome.storage.local.set({ [c.AUTH_TOKEN]: token });
+  async storeAccessToken(urlMap) {
+    await chrome.storage.local.set({ ...urlMap });
   }
 
   async listMessages() {
