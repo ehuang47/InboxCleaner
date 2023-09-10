@@ -10,15 +10,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function setUpAuth() {
-  const storage = await chrome.storage.local.get([c.AUTH_STARTED, c.ACCESS_TOKEN]);
-  if (storage.hasOwnProperty(c.ACCESS_TOKEN)) {
-    return; // no need to continue
+  const storage = await chrome.storage.local.get([c.AUTH_STARTED, c.ACCESS_TOKEN, c.EXPIRES_IN]);
+  if (storage.hasOwnProperty(c.ACCESS_TOKEN) && new Date().getTime() <= storage[c.EXPIRES_IN]) {
+    return;
+  } else {
+    await chrome.storage.local.remove([c.ACCESS_TOKEN, c.TOKEN_TYPE, c.EXPIRES_IN]);
   }
 
   if (!storage.hasOwnProperty(c.AUTH_STARTED)) { // has not processed OAUTH
     const res = await chrome.runtime.sendMessage({ message: c.CONTENT_INIT });
 
-    console.log("sent content init message");
     if (res.message = c.AUTH_USER) { // we expect the user's redirect url
       await chrome.storage.local.set({ [c.AUTH_STARTED]: true });
       window.location = res.url;
@@ -27,7 +28,8 @@ async function setUpAuth() {
     // assume we have been redirected here, check for access token
     // console.log(window.location.hash);
     await chrome.storage.local.remove(c.AUTH_STARTED);
-    await chrome.runtime.sendMessage({ message: c.AUTH_USER, hash: window.location.hash });
+    console.log(window.location);
+    await chrome.runtime.sendMessage({ message: c.AUTH_USER });
     // get response from service worker, token is stored in storage.ACCESS_TOKEN
   }
 }

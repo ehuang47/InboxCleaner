@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         redundant_emails = storage.redundant_emails ?? false,
         start = storage.start ?? null;
 
-      await handleAuthUser(message, sendResponse);
+      await handleAuthUser(message, sender, sendResponse);
 
       if (message.message === c.OPEN_NEW_TAB) {
         chrome.tabs.create({ url: message.url });
@@ -74,7 +74,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 //* Gmail API OAuth2
 // TODO: have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
 
-async function handleAuthUser(message, sendResponse) {
+async function handleAuthUser(message, sender, sendResponse) {
   if (message.message === c.CONTENT_INIT) {
     // const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     // chrome.tabs.sendMessage(tab.id, { message: c.AUTH_USER, url: redirectUrl });
@@ -82,7 +82,8 @@ async function handleAuthUser(message, sendResponse) {
     console.log("service worker received content init", redirectUrl);
     sendResponse({ message: c.AUTH_USER, url: redirectUrl });
   } else if (message.message === c.AUTH_USER) {
-    const urlMap = AuthService.shared.retrieveAccessToken(message.hash);
+    const url = new URL(sender.url);
+    const urlMap = AuthService.shared.retrieveAccessToken(url.hash);
     await AuthService.shared.storeAccessToken(urlMap);
   }
 }

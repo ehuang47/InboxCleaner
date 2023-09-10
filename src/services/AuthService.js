@@ -39,7 +39,16 @@ export default class AuthService {
   }
 
   async storeAccessToken(urlMap) {
-    await chrome.storage.local.set({ ...urlMap });
+    // expires_in is expressed in seconds, convert date + seconds to epoch
+    const expiration = new Date().setUTCSeconds(urlMap[c.EXPIRES_IN]);
+    const tokenProperties = {
+      [c.ACCESS_TOKEN]: urlMap[c.ACCESS_TOKEN],
+      [c.TOKEN_TYPE]: urlMap[c.TOKEN_TYPE],
+      [c.EXPIRES_IN]: expiration
+    };
+
+    console.log(tokenProperties);
+    await chrome.storage.local.set({ ...tokenProperties });
   }
 
   async listMessages() {
