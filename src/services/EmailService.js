@@ -67,45 +67,53 @@ function getSender(headers) {
 // grab every thread, extract its messages' contents, and store in the subscription dictionary
 async function extractThreadData(storage, threads) {
   const promises = threads.map((thread) => {
-    return gapi.client.gmail.users.threads.get({
-      userId: "me",
-      id: thread.id,
-    }).then(res => {
-      console.log("Received thread" + thread.id + ":\n", res);
-      let msg = res.result.messages[0];
-      // message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
-      if (msg.internalDate < storage.last_synced) {
-        // an old email thread that we've already scanned, so set redundant_emails to true
-        storage.redundant_emails = true;
-        return;
-      }
-      var payload = msg.payload;
-      var href = getHeaderUnsubLink(payload.headers);
-      if (href == null) {
-        // when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
-        var parsed_html = new DOMParser().parseFromString(
-          parseMessagePart(payload),
-          "text/html"
-        );
-        href = getUnsubLink(parsed_html);
-      }
-
-      if (href != null) {
-        // only grab sender information when an unsub link is found
-        var sender = getSender(payload.headers);
-        // console.log(sender);
-        // console.log("Unsubscribe at:", href);
-        // console.log(parsed_html);
-        let email = sender.email;
-        // console.log(email, storage.all_subs[email]);
-        if (storage.all_subs[email] == null) {
-          // only record sender info if there is no existing entry
-          storage.all_subs[email] = [sender.name, href, true];
+    return chrome.storage.local.get(c.ACCESS_TOKEN)
+      .then(res => {
+        const token = res[c.ACCESS_TOKEN];
+        const queryParams = new URLSearchParams({
+          [c.ACCESS_TOKEN]: token,
+        });
+        const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
+        return fetch(url + queryParams);
+      })
+      .then(data => data.json())
+      .then(res => {
+        console.log("Received thread" + thread.id + ":\n", res);
+        let msg = res.result.messages[0];
+        // message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
+        if (msg.internalDate < storage.last_synced) {
+          // an old email thread that we've already scanned, so set redundant_emails to true
+          storage.redundant_emails = true;
+          return;
         }
-      }
-    }).catch((e) => {
-      console.log("Error: " + e);
-    });
+        var payload = msg.payload;
+        var href = getHeaderUnsubLink(payload.headers);
+        if (href == null) {
+          // when header doesn't display "unsubscribe" link, parse the html in the message that usually has it at the bottom
+          var parsed_html = new DOMParser().parseFromString(
+            parseMessagePart(payload),
+            "text/html"
+          );
+          href = getUnsubLink(parsed_html);
+        }
+
+        if (href != null) {
+          // only grab sender information when an unsub link is found
+          var sender = getSender(payload.headers);
+          // console.log(sender);
+          // console.log("Unsubscribe at:", href);
+          // console.log(parsed_html);
+          let email = sender.email;
+          // console.log(email, storage.all_subs[email]);
+          if (storage.all_subs[email] == null) {
+            // only record sender info if there is no existing entry
+            storage.all_subs[email] = [sender.name, href, true];
+          }
+        }
+      })
+      .catch((e) => {
+        console.log("Error: " + e);
+      });
   });
   // returns promise that resolves only when all of the other callbacks of thread.get complete
   return Promise.all(promises);
@@ -126,12 +134,25 @@ export async function getThreads() {
       thread_count = 0,
       pg_token = "",
       promises = [];
+    const { [c.ACCESS_TOKEN]: token } = await chrome.storage.local.get(c.ACCESS_TOKEN);
     while (pg_token != null && thread_count < maxThreads && !storage.redundant_emails) {
-      var threadDetails = await gapi.client.gmail.users.threads.list({
-        userId: "me",
+      const queryParams = new URLSearchParams({
+        [c.ACCESS_TOKEN]: token,
         pageToken: pg_token,
         maxResults: 500,
-      }).catch(e => { console.warn("email service getting threads error", e); });
+      });
+      for (const p of queryParams) {
+        console.log(p);
+      }
+
+      // var threadDetails = await gapi.client.gmail.users.threads.list({
+      //   userId: "me",
+      //   pageToken: pg_token,
+      //   maxResults: 500,
+      // }).catch(e => { console.warn("email service getting threads error", e); });
+      const data = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads` + queryParams);
+      const threadDetails = await data.json();
+      console.log(threadDetails);
       var res = threadDetails.result;
       thread_count += res.threads.length;
       pg_token = res.nextPageToken;

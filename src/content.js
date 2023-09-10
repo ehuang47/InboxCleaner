@@ -42,17 +42,17 @@ async function setUpAuth() {
     const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
 
     // the SDK has been loaded, now do something with it!
-    sdk.Compose.registerComposeViewHandler((composeView) => {
-      // a compose view has come into existence, do something with it!
-      composeView.addButton({
-        title: "My Nifty Button!",
-        iconUrl:
-          "https://lh5.googleusercontent.com/itq66nh65lfCick8cJ-OPuqZ8OUDTIxjCc25dkc4WUT1JG8XG3z6-eboCu63_uDXSqMnLRdlvQ=s128-h128-e365",
-        onClick(event) {
-          event.composeView.insertTextIntoBodyAtCursor("Hello World!");
-        },
-      });
-    });
+    // sdk.Compose.registerComposeViewHandler((composeView) => {
+    //   // a compose view has come into existence, do something with it!
+    //   composeView.addButton({
+    //     title: "My Nifty Button!",
+    //     iconUrl:
+    //       "https://lh5.googleusercontent.com/itq66nh65lfCick8cJ-OPuqZ8OUDTIxjCc25dkc4WUT1JG8XG3z6-eboCu63_uDXSqMnLRdlvQ=s128-h128-e365",
+    //     onClick(event) {
+    //       event.composeView.insertTextIntoBodyAtCursor("Hello World!");
+    //     },
+    //   });
+    // });
 
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
     sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
@@ -99,6 +99,7 @@ async function setUpAuth() {
         titleLinkText: "Sync Now",
         onTitleLinkClick: () => {
           // port.postMessage({ message: "sync" });
+          console.log("sending sync message");
           chrome.runtime.sendMessage({ message: c.SYNC });
         },
         tableRows: all_subs,

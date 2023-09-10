@@ -28,42 +28,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message, sender);
   (async () => {
     try {
-      const storage = await chrome.storage.local
-        .get([c.GAPI_LOADED, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+      await handleAuthUser(message, sender, sendResponse);
 
-      let gapi_loaded = storage.gapi_loaded ?? false,
-        last_synced = storage.last_synced ?? null,
+      const storage = await chrome.storage.local
+        .get([c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+
+      let last_synced = storage.last_synced ?? null,
         redundant_emails = storage.redundant_emails ?? false,
         start = storage.start ?? null;
 
-      await handleAuthUser(message, sender, sendResponse);
-
-      if (message.message === c.OPEN_NEW_TAB) {
-        chrome.tabs.create({ url: message.url });
-      }
-
-      if (gapi_loaded) {
-        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-
-        if (message.message === c.SYNC) {
+      switch (message.message) {
+        case c.OPEN_NEW_TAB: {
+          chrome.tabs.create({ url: message.url });
+          break;
+        }
+        case c.SYNC: {
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           start = new Date().getTime();
           redundant_emails = false; // reset bool for every sync request
-          chrome.storage.local.set({ start, redundant_emails });
+          await chrome.storage.local.set({ start, redundant_emails });
 
           // see if we've synced before, and use the existing subscriber list & sync time
           // if (Object.keys(all_subs).length != 0)
           console.log("Sync in progress. Last synced at: ", last_synced);
           await getThreads();
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+          break;
         }
-
-        // mostly for testing, if you need to clear out subscriber list
-        if (message.message === c.RESET) {
-          chrome.storage.local.clear();
+        case c.RESET: {
+          // mostly for testing, if you need to clear out subscriber list
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          await chrome.storage.local.clear();
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+          break;
         }
-        // TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
+        default:
+          console.log("message not handled", message.message);
       }
+      // TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
     } catch (e) {
       console.warn("error runtime.onMessage.listener", e);
     }
@@ -76,8 +78,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleAuthUser(message, sender, sendResponse) {
   if (message.message === c.CONTENT_INIT) {
-    // const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    // chrome.tabs.sendMessage(tab.id, { message: c.AUTH_USER, url: redirectUrl });
     const redirectUrl = AuthService.shared.getAuthRedirectUrl();
     console.log("service worker received content init", redirectUrl);
     sendResponse({ message: c.AUTH_USER, url: redirectUrl });
@@ -86,6 +86,8 @@ async function handleAuthUser(message, sender, sendResponse) {
     const urlMap = AuthService.shared.retrieveAccessToken(url.hash);
     await AuthService.shared.storeAccessToken(urlMap);
   }
+
+  //todo: throw error if things go wrong, i can't do anything related to syncing without authorized requests
 }
 
 // chrome.identity.getAuthToken({ interactive: true }, (token) => {
