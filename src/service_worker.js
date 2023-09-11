@@ -28,7 +28,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message, sender);
   (async () => {
     try {
-      await handleAuthUser(message, sender, sendResponse);
 
       const storage = await chrome.storage.local
         .get([c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
@@ -62,6 +61,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
+        case c.CONTENT_INIT:
+        case c.AUTH_USER:
+          await handleAuthUser(message, sender, sendResponse);
+          break;
         default:
           console.log("message not handled", message.message);
       }

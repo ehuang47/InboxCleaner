@@ -67,14 +67,15 @@ function getSender(headers) {
 // grab every thread, extract its messages' contents, and store in the subscription dictionary
 async function extractThreadData(storage, threads) {
   const promises = threads.map((thread) => {
-    return chrome.storage.local.get(c.ACCESS_TOKEN)
+    return chrome.storage.local.get([c.ACCESS_TOKEN, c.TOKEN_TYPE])
       .then(res => {
-        const token = res[c.ACCESS_TOKEN];
-        const queryParams = new URLSearchParams({
-          [c.ACCESS_TOKEN]: token,
-        });
+        const options = {
+          headers: {
+            "Authorization": `${res[c.ACCESS_TOKEN]} ${res[c.TOKEN_TYPE]}`,
+          },
+        };
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
-        return fetch(url + queryParams);
+        return fetch(url, options);
       })
       .then(data => data.json())
       .then(res => {
@@ -122,8 +123,7 @@ async function extractThreadData(storage, threads) {
 // grab all gmail threads that haven't been scanned, single out the unique subscribed emails that aren't already stored, and update chrome.storage
 export async function getThreads() {
   try {
-    const storage = await chrome.storage.local
-      .get([c.ALL_SUBS, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START, c.ACCESS_TOKEN, c.TOKEN_TYPE]);
 
     storage.all_subs = storage.all_subs ?? {},
       storage.last_synced = storage.last_synced ?? null,
@@ -134,23 +134,20 @@ export async function getThreads() {
       thread_count = 0,
       pg_token = "",
       promises = [];
-    const { [c.ACCESS_TOKEN]: token } = await chrome.storage.local.get(c.ACCESS_TOKEN);
     while (pg_token != null && thread_count < maxThreads && !storage.redundant_emails) {
       const queryParams = new URLSearchParams({
-        [c.ACCESS_TOKEN]: token,
         pageToken: pg_token,
         maxResults: 500,
       });
       for (const p of queryParams) {
         console.log(p);
       }
-
-      // var threadDetails = await gapi.client.gmail.users.threads.list({
-      //   userId: "me",
-      //   pageToken: pg_token,
-      //   maxResults: 500,
-      // }).catch(e => { console.warn("email service getting threads error", e); });
-      const data = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads` + queryParams);
+      const options = {
+        headers: {
+          "Authorization": `${storage[c.TOKEN_TYPE]} ${storage[c.ACCESS_TOKEN]}`,
+        },
+      };
+      const data = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads` + queryParams, options);
       const threadDetails = await data.json();
       console.log(threadDetails);
       var res = threadDetails.result;

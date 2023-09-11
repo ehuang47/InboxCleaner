@@ -55,6 +55,7 @@ async function setUpAuth() {
     // });
 
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
+    console.log("about to use sdk to inject things");
     sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
       var last_synced = "";
       var all_subs = [];
