@@ -93,7 +93,3 @@ async function handleAuthUser(message, sender, sendResponse) {
 
   //todo: throw error if things go wrong, i can't do anything related to syncing without authorized requests
 }
-
-chrome.identity.getAuthToken({ interactive: true }, (token) => {
-  console.log(token);
-});

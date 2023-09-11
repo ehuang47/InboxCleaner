@@ -12,9 +12,6 @@
     "service_worker": "service_worker.js",
     "type": "module"
   },
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
-  },
   "oauth2": {
     "client_id": "142584390652-cdvg7lisv34vfpk71qds12ehorqrlcfu.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]

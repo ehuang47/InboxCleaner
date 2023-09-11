@@ -67,11 +67,11 @@ function getSender(headers) {
 // grab every thread, extract its messages' contents, and store in the subscription dictionary
 async function extractThreadData(storage, threads) {
   const promises = threads.map((thread) => {
-    return chrome.storage.local.get([c.ACCESS_TOKEN, c.TOKEN_TYPE])
+    return chrome.identity.getAuthToken({ interactive: true })
       .then(res => {
         const options = {
           headers: {
-            "Authorization": `${res[c.TOKEN_TYPE]} ${res[c.ACCESS_TOKEN]}`,
+            "Authorization": `Bearer ${res.token}`,
           },
         };
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
@@ -142,9 +142,10 @@ export async function getThreads() {
       // for (const p of queryParams) {
       //   console.log(p);
       // }
+      const { token } = await chrome.identity.getAuthToken({ interactive: true });
       const options = {
         headers: {
-          "Authorization": `${storage[c.TOKEN_TYPE]} ${storage[c.ACCESS_TOKEN]}`,
+          "Authorization": `Bearer ${token}`,
         },
       };
       const data = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads?` + queryParams, options);
