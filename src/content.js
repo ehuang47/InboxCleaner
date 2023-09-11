@@ -38,31 +38,17 @@ async function setUpAuth() {
   try {
     await setUpAuth();
     console.log("finished auth setup. about to use sdk to inject things");
-    var res = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
+    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
-
-    // the SDK has been loaded, now do something with it!
-    // sdk.Compose.registerComposeViewHandler((composeView) => {
-    //   // a compose view has come into existence, do something with it!
-    //   composeView.addButton({
-    //     title: "My Nifty Button!",
-    //     iconUrl:
-    //       "https://lh5.googleusercontent.com/itq66nh65lfCick8cJ-OPuqZ8OUDTIxjCc25dkc4WUT1JG8XG3z6-eboCu63_uDXSqMnLRdlvQ=s128-h128-e365",
-    //     onClick(event) {
-    //       event.composeView.insertTextIntoBodyAtCursor("Hello World!");
-    //     },
-    //   });
-    // });
+    const storage_subs = storage[c.ALL_SUBS];
 
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
-
     sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
-      var last_synced = "";
-      var all_subs = [];
-
-      if (Object.keys(res).length != 0) {
-        let subs = res.all_subs;
-        for (key in subs) {
+      let last_synced = "";
+      const all_subs = [];
+      if (storage_subs && Object.keys(storage_subs).length > 0) {
+        const subs = storage_subs;
+        for (const key in subs) {
           // key = email, subs = { [name, unsub link, isSubscribed bool], ... }
           // console.log(key, subs[key]);
           all_subs.push({
@@ -76,31 +62,16 @@ async function setUpAuth() {
           });
         }
 
-        all_subs.sort((a, b) => {
-          let fa = a.body.toLowerCase(),
-            fb = b.body.toLowerCase();
-
-          if (fa < fb) {
-            return -1;
-          }
-          if (fa > fb) {
-            return 1;
-          }
-          return 0;
-        });
-        last_synced = "Last synced: " + new Date(res.last_synced).toString();
+        all_subs.sort((a, b) => a.body.toLowerCase().localeCompare(b.body.toLowerCase()));
+        last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toString();
       }
 
       ListRouteView.addCollapsibleSection({
         title: "Subscriptions",
         subtitle:
-          last_synced === ""
-            ? last_synced
-            : "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
+          last_synced ?? "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
         titleLinkText: "Sync Now",
         onTitleLinkClick: () => {
-          // port.postMessage({ message: "sync" });
-          console.log("sending sync message");
           chrome.runtime.sendMessage({ message: c.SYNC });
         },
         tableRows: all_subs,
@@ -114,37 +85,32 @@ async function setUpAuth() {
         // console.log(spans[0], spans[1], spans[2]); // should be sender, email, unsubscribe link
         let key = spans[1].innerText;
         spans[2].addEventListener("click", (e) => {
-          let subs = res.all_subs;
-          subs[key][2] = false;
-          chrome.storage.local.set({ all_subs: subs });
-          // port.postMessage({ message: "open_new_tab", url: subs[key][1] });
-          chrome.runtime.sendMessage({ message: c.OPEN_NEW_TAB, url: subs[key][1] });
+          storage_subs[key][2] = false;
+          chrome.storage.local.set({ [c.ALL_SUBS]: storage_subs });
+          chrome.runtime.sendMessage({ message: c.OPEN_NEW_TAB, url: storage_subs[key][1] });
         });
       }
 
       let test = document.querySelector(".inboxsdk__resultsSection .zE");
       test.children[0].addEventListener("click", (e) => {
-        console.log("clicked subscription heading, resetting");
-        // port.postMessage({ message: c.RESET });
         chrome.runtime.sendMessage({ message: c.RESET });
       });
+
+      console.log("all_subs", all_subs);
+      console.log("storage_subs", storage_subs);
     });
 
     // for each thread row that we see, attach a label to indicate if this is a subscribed email
     sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
       var contact = ThreadRowView.getContacts()[0];
-      if (res.all_subs != null && res.all_subs[contact.emailAddress] != null)
-        res.all_subs[contact.emailAddress][2]
-          ? ThreadRowView.addLabel({
-            title: "Subscribed",
-            foregroundColor: "white",
-            backgroundColor: "gold",
-          })
-          : ThreadRowView.addLabel({
-            title: "Unsubscribed",
-            foregroundColor: "white",
-            backgroundColor: "pink",
-          });
+      if (storage_subs && storage_subs.hasOwnProperty(contact.emailAddress)) {
+        const [name, unsubUrl, isSubscribed] = storage_subs[contact.emailAddress];
+        ThreadRowView.addLabel({
+          title: isSubscribed ? "Subscribed" : "Unsubscribed",
+          foregroundColor: "white",
+          backgroundColor: isSubscribed ? "gold" : "pink",
+        });
+      }
     });
   } catch (e) {
     console.warn("content.js error", e);

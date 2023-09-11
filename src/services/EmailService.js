@@ -130,7 +130,7 @@ export async function getThreads() {
       storage.redundant_emails = storage.redundant_emails ?? false,
       storage.start = storage.start ?? null;
 
-    let maxThreads = 1500,
+    let maxThreads = 50, //! change this for testing
       thread_count = 0,
       pg_token = "",
       promises = [];

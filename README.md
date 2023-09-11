@@ -7,9 +7,14 @@ InboxCleaner
 
 > A v2 manifest-based Chrome extension that parses a user's Gmail inbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
 
+- [Demo](#demo)
 - [Technologies](#technologies)
 - [Features](#features)
 - [Other](#other)
+
+## Demo
+
+![After Syncing](./assets/demo.png)
 
 ## Technologies
 
