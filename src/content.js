@@ -37,7 +37,7 @@ async function setUpAuth() {
 (async function () {
   try {
     await setUpAuth();
-
+    console.log("finished auth setup. about to use sdk to inject things");
     var res = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
 
@@ -55,7 +55,7 @@ async function setUpAuth() {
     // });
 
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
-    console.log("about to use sdk to inject things");
+
     sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
       var last_synced = "";
       var all_subs = [];

@@ -88,6 +88,7 @@ async function handleAuthUser(message, sender, sendResponse) {
     const url = new URL(sender.url);
     const urlMap = AuthService.shared.retrieveAccessToken(url.hash);
     await AuthService.shared.storeAccessToken(urlMap);
+    sendResponse();
   }
 
   //todo: throw error if things go wrong, i can't do anything related to syncing without authorized requests

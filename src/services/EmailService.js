@@ -71,7 +71,7 @@ async function extractThreadData(storage, threads) {
       .then(res => {
         const options = {
           headers: {
-            "Authorization": `${res[c.ACCESS_TOKEN]} ${res[c.TOKEN_TYPE]}`,
+            "Authorization": `${res[c.TOKEN_TYPE]} ${res[c.ACCESS_TOKEN]}`,
           },
         };
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
@@ -80,7 +80,7 @@ async function extractThreadData(storage, threads) {
       .then(data => data.json())
       .then(res => {
         console.log("Received thread" + thread.id + ":\n", res);
-        let msg = res.result.messages[0];
+        let msg = res.messages[0];
         // message mimeType is either multiparty or text/html; we want to use decode the UTF8-encoded html
         if (msg.internalDate < storage.last_synced) {
           // an old email thread that we've already scanned, so set redundant_emails to true
@@ -139,27 +139,26 @@ export async function getThreads() {
         pageToken: pg_token,
         maxResults: 500,
       });
-      for (const p of queryParams) {
-        console.log(p);
-      }
+      // for (const p of queryParams) {
+      //   console.log(p);
+      // }
       const options = {
         headers: {
           "Authorization": `${storage[c.TOKEN_TYPE]} ${storage[c.ACCESS_TOKEN]}`,
         },
       };
-      const data = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads` + queryParams, options);
+      const data = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/threads?` + queryParams, options);
       const threadDetails = await data.json();
       console.log(threadDetails);
-      var res = threadDetails.result;
-      thread_count += res.threads.length;
-      pg_token = res.nextPageToken;
-      promises.push(extractThreadData(storage, res.threads));
+      thread_count += threadDetails.threads.length;
+      pg_token = threadDetails.nextPageToken;
+      promises.push(extractThreadData(storage, threadDetails.threads));
     }
     // ! await to make sure we store the next page token in the thread list.
     // ! Promise.all to wait for extractThreadData promises to resolve after all thread.get callbacks complete, then store the subscriber list
 
     await Promise.all(promises);
-    console.log(all_subs);
+    console.log(storage.all_subs);
     chrome.storage.local.set({
       [c.ALL_SUBS]: storage.all_subs,
       last_synced: new Date().getTime()
