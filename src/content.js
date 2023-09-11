@@ -36,7 +36,7 @@ async function setUpAuth() {
 
 (async function () {
   try {
-    await setUpAuth();
+    // await setUpAuth();
     console.log("finished auth setup. about to use sdk to inject things");
     const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");

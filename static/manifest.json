@@ -3,6 +3,7 @@
   "name": "InboxCleaner",
   "description": "View and manage a list of email subscriptions on Gmail.",
   "version": "0.1",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA00vtOilxnBDosRhhMuWWYgWbvcOqAFQrLKzG+ZQXoV6/6L7TGHbOB6izhKPA+GjmjF3qkdYxEzUqLgWiwgLZSJKs7eU4/fydlFS5gGXTd+7UBO0tPajLPgLXPGsugY5Icg/IEBS9p2q6yu3zv9GS+7BmBrgGMBc92tdxIaqyYcdcD87/AQynJdkX2XP0swL3bSMXtCyAZNiVqRSTq+2ldmIbl4CRxKj4/AINoz0xrxFimBYzkbXjseXc4deHgNr41+GyZZ/p/S2fmSl9WF0SMuoW/WqEOoAot5vo/ONRsyD0jhV0JFrfGQi4Lqq8yRbaY06zT+xu1cPjdWPM9JGa2wIDAQAB",
   "content_scripts":[{
     "matches": ["https://mail.google.com/*"],
     "js":["content.js"]
@@ -15,8 +16,8 @@
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
   "oauth2": {
-    "client_id": "142584390652-vomcgmkmgsh6v92j9i8c4eg74pil19sd.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/gmail.readonly"]
+    "client_id": "142584390652-cdvg7lisv34vfpk71qds12ehorqrlcfu.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
   },
   "icons":{
     "128": "gman.png"

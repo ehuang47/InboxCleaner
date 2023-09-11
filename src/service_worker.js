@@ -94,14 +94,6 @@ async function handleAuthUser(message, sender, sendResponse) {
   //todo: throw error if things go wrong, i can't do anything related to syncing without authorized requests
 }
 
-// chrome.identity.getAuthToken({ interactive: true }, (token) => {
-  // global.gapi_onload = () => {
-  //   // runs after api client is remote-loaded
-  //   // load APIs with discovery, set chrome identity oauth token
-  //   gapi.client.load(c.DISCOVERY_URL).then(() => {
-  //     chrome.storage.local.set({ [c.GAPI_LOADED]: true });
-  //     gapi.client.setToken({ access_token: token });
-  //   });
-  // };
-  // console.log("finished registering window.gapi_onload");
-// });
+chrome.identity.getAuthToken({ interactive: true }, (token) => {
+  console.log(token);
+});
