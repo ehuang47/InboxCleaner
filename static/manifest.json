@@ -24,7 +24,8 @@
     "storage",
     "identity",
     "declarativeContent",
-    "scripting"
+    "scripting",
+    "offscreen"
   ],
   "host_permissions": [
 		"https://mail.google.com/*",

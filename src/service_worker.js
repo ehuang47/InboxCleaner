@@ -1,7 +1,6 @@
 import "@inboxsdk/core/background.js";
-import { getThreads } from "./services/EmailService";
+import EmailService from "./services/EmailService";
 import * as c from "./constants";
-import AuthService from "./services/AuthService";
 
 // when extension is installed, updated, or chrome is updated
 chrome.runtime.onInstalled.addListener((details) => {
@@ -23,12 +22,18 @@ chrome.runtime.onInstalled.addListener((details) => {
   });
 });
 
+// for dom-parsing
+chrome.offscreen.createDocument({
+  url: chrome.runtime.getURL("dom-parser.html"),
+  reasons: [chrome.offscreen.Reason.DOM_PARSER],
+  justification: "needing to parse the html of an email message bodies"
+});
+
 // handle communication between content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message, sender);
   (async () => {
     try {
-
       const storage = await chrome.storage.local
         .get([c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
 
@@ -50,7 +55,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // see if we've synced before, and use the existing subscriber list & sync time
           // if (Object.keys(all_subs).length != 0)
           console.log("Sync in progress. Last synced at: ", last_synced);
-          await getThreads();
+          await EmailService.shared.syncAllThreads();
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
@@ -78,18 +83,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 //* Gmail API OAuth2
 // TODO: have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
-
-async function handleAuthUser(message, sender, sendResponse) {
-  if (message.message === c.CONTENT_INIT) {
-    const redirectUrl = AuthService.shared.getAuthRedirectUrl();
-    console.log("service worker received content init", redirectUrl);
-    sendResponse({ message: c.AUTH_USER, url: redirectUrl });
-  } else if (message.message === c.AUTH_USER) {
-    const url = new URL(sender.url);
-    const urlMap = AuthService.shared.retrieveAccessToken(url.hash);
-    await AuthService.shared.storeAccessToken(urlMap);
-    sendResponse();
-  }
-
-  //todo: throw error if things go wrong, i can't do anything related to syncing without authorized requests
-}
