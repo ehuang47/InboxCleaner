@@ -30,7 +30,7 @@ export default class EmailService {
 
       while (pageToken != null && thread_count < maxThreads && !storage.redundant_emails) {
         const threadList = await this.emailDao.getThreadList(pageToken, maxResults);
-        thread_count += threadList.threads.length.length;
+        thread_count += threadList.threads.length;
         pageToken = threadList.nextPageToken;
         for (const thread of threadList.threads) {
           const parsingOp = this.emailDao.getThreadData(thread)
@@ -54,6 +54,7 @@ export default class EmailService {
       await Promise.all(threadParsingOperations); // finish processing all thread lists
       await emailUtils.updateStoredThreads(storage);
     } catch (e) {
+      console.log(e);
       console.trace();
       this.logger.log({
         message: e.message,

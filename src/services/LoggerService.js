@@ -33,10 +33,10 @@ export default class LoggerService {
       //   type: "info"
       // });
       const successData = await callback();
-      // this.log({
-      //   data: successData,
-      //   message: successMsg
-      // });
+      this.log({
+        data: successData,
+        message: successMsg
+      });
       return successData;
     } catch (e) {
       this.log({

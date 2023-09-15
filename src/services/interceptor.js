@@ -1,6 +1,6 @@
 import "regenerator-runtime/runtime";
 import axios from "axios";
-import fetchAdapter from "@vespaiach/axios-fetch-adapter";
+import fetchAdapter from "./vespaiach/axios-fetch-adapter";
 
 /* Useful config properties
 baseURL, timeout, params, headers, data,
