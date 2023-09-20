@@ -5,39 +5,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log(sender.tab ?
     "from a content script:" + sender.tab.url :
     "from the extension");
-  if (request.message === c.UPDATED_SUBSCRIBERS) window.location.reload(true);
+  if (request.message === c.UPDATED_SUBSCRIBERS) {
+    window.location.reload(true);
+  }
   sendResponse();
 });
 
-async function setUpAuth() {
-  const storage = await chrome.storage.local.get([c.AUTH_STARTED, c.ACCESS_TOKEN, c.EXPIRES_IN]);
-  if (storage.hasOwnProperty(c.ACCESS_TOKEN) && new Date().getTime() <= storage[c.EXPIRES_IN]) {
-    return;
-  } else {
-    await chrome.storage.local.remove([c.ACCESS_TOKEN, c.TOKEN_TYPE, c.EXPIRES_IN]);
-  }
-
-  if (!storage.hasOwnProperty(c.AUTH_STARTED)) { // has not processed OAUTH
-    const res = await chrome.runtime.sendMessage({ message: c.CONTENT_INIT });
-
-    if (res.message = c.AUTH_USER) { // we expect the user's redirect url
-      await chrome.storage.local.set({ [c.AUTH_STARTED]: true });
-      window.location = res.url;
-    }
-  } else { // in the middle of OAUTH, do not have token
-    // assume we have been redirected here, check for access token
-    // console.log(window.location.hash);
-    await chrome.storage.local.remove(c.AUTH_STARTED);
-    console.log(window.location);
-    await chrome.runtime.sendMessage({ message: c.AUTH_USER });
-    // get response from service worker, token is stored in storage.ACCESS_TOKEN
-  }
-}
-
 (async function () {
   try {
-    // await setUpAuth();
-    console.log("finished auth setup. about to use sdk to inject things");
     const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
     const storage_subs = storage[c.ALL_SUBS];

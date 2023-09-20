@@ -16,15 +16,6 @@ export default class EmailDao {
   async getThreadList(pageToken, maxResults) {
     return this.logger.forRequests({
       callback: async () => {
-        // const { token } = await chrome.identity.getAuthToken({ interactive: true });
-        // const options = {
-        //   headers: {
-        //     "Authorization": `Bearer ${token}`,
-        //   },
-        // };
-        // const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads?` + queryParams;
-        // const data = await fetch(url, options);
-        // return data.json();
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads?`;
         const res = await axios.get(url, {
           params: { pageToken, maxResults }
@@ -40,17 +31,6 @@ export default class EmailDao {
   async getThreadData(thread) {
     return this.logger.forRequests({
       callback: async () => {
-        // const { token } = await chrome.identity.getAuthToken({ interactive: true });
-        // const options = {
-        //   headers: {
-        //     "Authorization": `Bearer ${token}`,
-        //   },
-        // };
-
-        // const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
-        // const data = await fetch(url, options);
-        // return data.json();
-
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
         const res = await axios.get(url);
         return res.data;

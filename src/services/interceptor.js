@@ -7,7 +7,7 @@ baseURL, timeout, params, headers, data,
 xsrfCookieName, xsrfHeaderName, cancelToken, withCredentials
 */
 const ax = axios.create({
-  timeout: 1000,
+  timeout: 5000,
   adapter: fetchAdapter
 });
 

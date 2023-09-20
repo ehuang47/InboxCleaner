@@ -22,8 +22,8 @@ export default class EmailService {
       const storage = await emailUtils.getStoredThreads();
 
       //todo change maxThreads & maxResults for testing. limit is x/500
-      let maxThreads = 50,
-        maxResults = 50,
+      let maxThreads = 500,
+        maxResults = 500,
         thread_count = 0,
         pageToken = "",
         threadParsingOperations = [];
@@ -34,19 +34,18 @@ export default class EmailService {
         pageToken = threadList.nextPageToken;
         for (const thread of threadList.threads) {
           const parsingOp = this.emailDao.getThreadData(thread)
-            .then(threadData => {
+            .then(async (threadData) => {
               const wasAlreadyParsed = emailUtils.checkAlreadyParsed(storage, threadData);
               if (wasAlreadyParsed) return;
               const threadPayload = threadData.messages[0].payload;
-              return Promise.all([emailUtils.getUnsubLink(threadPayload), threadPayload]);
-            })
-            .then(([unsubLink, threadPayload]) => {
+              const unsubLink = await emailUtils.getUnsubLink(threadPayload);
               if (!unsubLink) return;
               const { name, email } = emailUtils.getSender(threadPayload.headers);
               if (!storage.all_subs.hasOwnProperty(email)) {
                 storage.all_subs[email] = [name, unsubLink, true];
               }
             });
+
           threadParsingOperations.push(parsingOp);
         }
       }

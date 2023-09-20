@@ -33,6 +33,7 @@ export function getHeaderUnsubLink(headers) {
 
 // look in email headers to find the sender name and email
 export function getSender(headers) {
+  // console.log("getSender", headers);
   for (var i in headers) {
     let header = headers[i];
     if (header.name === "From") {
@@ -81,7 +82,10 @@ export async function getUnsubLink(threadDataPayload) {
   // message mimeType is either multiparty or text/html
   let href = getHeaderUnsubLink(threadDataPayload.headers);
   if (!href) { // check thread's email body
-    const { unsubLink } = await chrome.runtime.sendMessage({ message: "parse-dom", data: threadDataPayload });
+    const { unsubLink } = await chrome.runtime.sendMessage({
+      message: "parse-dom",
+      data: threadDataPayload
+    });
     href = unsubLink;
   }
   return href;
