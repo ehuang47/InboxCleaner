@@ -1,6 +1,6 @@
 <h1 align="center">
 <sub>
-<img src="images/gman.png" height="38" width="38">
+<img src="images/cleaning.png" height="38" width="38">
 </sub>
 InboxCleaner
 </h1>
