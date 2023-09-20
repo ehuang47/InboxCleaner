@@ -63,7 +63,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // mostly for testing, if you need to clear out subscriber list
           const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           await chrome.storage.local.clear();
-          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+          chrome.tabs.sendMessage(tab.id, { message: c.RESET });
           break;
         }
         case c.CONTENT_INIT:
