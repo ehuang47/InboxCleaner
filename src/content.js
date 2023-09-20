@@ -3,14 +3,13 @@ import * as c from "./constants.js";
 import * as contentUtils from "./utils/content-utils.js";
 
 const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
+let unregisterHandler, collapsibleSectionView;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.message) {
     case c.UPDATED_SUBSCRIBERS: {
       clearUI().then(renderUI);
-    }
-    case c.RESET: {
-      clearUI();
+      break;
     }
     default:
       console.log("unknown handler", request.message);
@@ -19,7 +18,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function clearUI() {
-
+  collapsibleSectionView.remove();
+  unregisterHandler();
 }
 
 async function renderUI() {
@@ -28,7 +28,7 @@ async function renderUI() {
     const storage_subs = storage[c.ALL_SUBS];
 
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
-    const unregisterHandler = sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
+    unregisterHandler = sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
       let last_synced = "";
       const all_subs = [];
 
@@ -36,14 +36,13 @@ async function renderUI() {
         last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toString();
       }
 
-      ListRouteView.addCollapsibleSection({
+      collapsibleSectionView = ListRouteView.addCollapsibleSection({
         title: "Subscriptions",
         subtitle:
           last_synced ?? "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
         titleLinkText: "Sync Now",
         onTitleLinkClick: () => {
           chrome.runtime.sendMessage({ message: c.SYNC });
-          unregisterHandler();
         },
         tableRows: all_subs,
         contentElement: contentUtils.instructionHTML(),
