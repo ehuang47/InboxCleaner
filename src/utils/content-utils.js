@@ -48,15 +48,3 @@ export function labelThreadRowViews(storage_subs) {
     }
   };
 }
-
-export function instructionHTML() {
-  const parent = document.createElement("div");
-  parent.innerHTML = `<p>If you've recently unsubscribed from an email address and would like to delete all of their emails from your inbox, follow the steps below.</p>
-  <ol>
-  <li id="li-0">Copy and paste their email address into the search bar and hit enter.</li>
-  <li id="li-1">Check the box to select all emails, then select the option to 'Select all conversations that match this search'.</li>
-  <li id="li-2">With all emails selected, click the trash bin 'Delete' icon.</li>
-  </ol>
-  `;
-  return parent;
-}

@@ -1,7 +1,7 @@
 import * as InboxSDK from '@inboxsdk/core';
 import * as c from "./constants.js";
 import * as contentUtils from "./utils/content-utils.js";
-
+import ui from "./ui";
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.message) {
     case c.UPDATED_SUBSCRIBERS: {
@@ -21,7 +21,7 @@ const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
 const customRouteIds = {
   SUBSCRIPTIONS: "subscriptions"
 };
-let unregisterHandler, collapsibleSectionView;
+const unregisterHandlers = [];
 
 function log() {
   console.log.apply(
@@ -45,22 +45,20 @@ initUI();
 renderUI();
 
 function initUI() {
-  console.log(sdk.NavMenu);
-  // sdk.NavMenu.INBOX.addNavItem({
-  //   name: "Subscriptions",
-  // });
   const subsNavItemView = sdk.NavMenu.addNavItem({
     name: "Subscriptions",
   });
   const currentSubsView = subsNavItemView.addNavItem({
     name: "Current",
     routeID: customRouteIds.SUBSCRIPTIONS,
+    iconUrl: chrome.runtime.getURL('./subscribe.png'),
   });
 }
 
 function clearUI() {
-  collapsibleSectionView.remove();
-  unregisterHandler();
+  // collapsibleSectionView.remove();
+  unregisterHandlers.forEach(fn => fn());
+  unregisterHandlers.length = 0;
 }
 
 async function renderUI() {
@@ -69,7 +67,7 @@ async function renderUI() {
     const storage_subs = storage[c.ALL_SUBS];
 
     // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
-    sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
+    unregisterHandlers[unregisterHandlers.length] = sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
       const parent = customRouteView.getElement();
       console.log(parent);
 
@@ -80,65 +78,34 @@ async function renderUI() {
         last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toString();
       }
 
+      parent.class;
       parent.innerHTML = `
-      <h3>Subscriptions</h3> ${last_synced}
-      <button id="sync-now">Sync Now</button>
-      <table>
-        <thead>
-          <tr>
-            <th>Company</th>
-            <th>Subscribed?</th>
-            <th>Email Address</th>
-            <th>Click To Unsubscribe</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${all_subs.map(sub =>
-        `<tr>
-              <td>${sub.title}</td>
-              <td>${storage_subs[sub.body][2]}</td>
-              <td>${sub.body}</td>
-              <td><a href=${storage_subs[sub.body][1]}>Unsubscribe</a></td>
-            </tr>`
-      ).join("")
-        }
-        </tbody>
-      </table>
+      <h3>Subscriptions</h3>
+      <div>
+        <div>${last_synced}</div>
+        <div>You are currently subscribed to ${all_subs.length} emails.</div>
+      </div>
+      <button id="sync-now-btn">Sync Now</button>
+      <button id="reset-btn">Reset</button>
       `;
-      console.log(parent.querySelector("button#sync-now"));
-    });
+      parent.appendChild(ui.Instructions());
+      parent.appendChild(ui.SubscriptionTable(all_subs, storage_subs));
 
-    unregisterHandler = sdk.Router.handleListRoute(sdk.Router.NativeListRouteIDs.INBOX, (ListRouteView) => {
-      let last_synced = "";
-      const all_subs = [];
-
-      if (contentUtils.formatAllSubs(storage_subs, all_subs)) {
-        last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toString();
-      }
-
-      collapsibleSectionView = ListRouteView.addCollapsibleSection({
-        title: "Subscriptions",
-        subtitle:
-          last_synced ?? "You are currently subscribed to " + all_subs.length + " emails. " + last_synced,
-        titleLinkText: "Sync Now",
-        onTitleLinkClick: () => {
-          chrome.runtime.sendMessage({ message: c.SYNC });
-        },
-        tableRows: all_subs,
-        contentElement: contentUtils.instructionHTML(),
+      const syncNowBtn = parent.querySelector("button#sync-now-btn");
+      syncNowBtn.addEventListener("click", () => {
+        chrome.runtime.sendMessage({ message: c.SYNC });
       });
-
-      // scan the document for the html injected by inboxsdk and add onclick functionality
-      contentUtils.registerRowHandlers(storage_subs);
-
-      // debugging: just for clearing storage and resetting UI
-      let test = document.querySelector(".inboxsdk__resultsSection .zE");
-      test.children[0].addEventListener("click", (e) => {
+      const resetBtn = parent.querySelector("button#reset-btn");
+      resetBtn.addEventListener("click", () => {
         chrome.runtime.sendMessage({ message: c.RESET });
       });
+
     });
 
-    sdk.Lists.registerThreadRowViewHandler(contentUtils.labelThreadRowViews(storage_subs));
+
+
+    unregisterHandlers[unregisterHandlers.length] = sdk.Lists.registerThreadRowViewHandler(contentUtils.labelThreadRowViews(storage_subs));
+
   } catch (e) {
     console.warn("content.js error", e);
   }

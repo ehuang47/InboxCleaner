@@ -11,6 +11,7 @@ InboxCleaner
 - [Technologies](#technologies)
 - [Features](#features)
 - [Other](#other)
+- [Attributions](#attributions)
 
 ## Demo
 
@@ -33,3 +34,10 @@ As of 12/17/2021, InboxCleaner only supports the following:
 
 View a list of the current [issues](https://github.com/ehuang47/InboxCleaner/issues) or the [project](https://github.com/users/ehuang47/projects/1/views/1?groupedBy%5BcolumnId%5D=56045934).
 View more documentation on the [wiki](https://github.com/ehuang47/InboxCleaner/wiki).
+
+## Attributions
+
+| Asset | Source |
+| -- | -- |
+| [Subscription Icon](./images/subscribe.png) | [Danteee82](https://www.flaticon.com/free-icon/subscribe_7048370?term=subscription&page=1&position=7&origin=tag&related_id=7048370) |
+| [InboxCleaner Icon](./images/cleaning.png) | [kerismaker](https://www.flaticon.com/free-icon/cleaning_6792371?term=inbox+cleaner&page=1&position=1&origin=search&related_id=6792371) |

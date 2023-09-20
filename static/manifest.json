@@ -17,7 +17,7 @@
     "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
   },
   "icons":{
-    "128": "gman.png"
+    "128": "cleaning.png"
   },
   "permissions": [
     "activeTab",
@@ -31,5 +31,9 @@
 		"https://mail.google.com/*",
 		"https://inbox.google.com/*",
 		"https://www.googleapis.com/*"
-	]
+	],
+  "web_accessible_resources" : [{
+    "resources": ["*.png"],
+    "matches": ["https://mail.google.com/*"]
+  }]
 }
