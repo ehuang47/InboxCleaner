@@ -103,13 +103,14 @@ async function renderUI(customRouteView, currentSubsView) {
 
     async function loadSubscriptionRoute() {
       const parent = customRouteView.getElement();
+      parent.classList.add(["ic-container"]);
       console.log(parent);
 
       let last_synced = "";
       const all_subs = [];
 
       if (contentUtils.formatAllSubs(storage_subs, all_subs)) {
-        last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toString();
+        last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toLocaleString();
       }
 
       parent.innerHTML = `

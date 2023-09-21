@@ -12,24 +12,21 @@ export function Instructions() {
 
 export function SubscriptionTable({ all_subs, storage_subs }) {
   const table = document.createElement("table");
+  table.classList.add(["ic-table"]);
   table.innerHTML = `<thead>
           <tr>
-            <th>Company</th>
-            <th>Subscribed?</th>
-            <th>Email Address</th>
-            <th>Click To Unsubscribe</th>
+            <th>Sender</th>
+            <th>Address</th>
+            <th colspan="2">Email Actions</th>
           </tr>
         </thead>
         <tbody>
-          ${all_subs.map(sub =>
-    `<tr>
-              <td>${sub.title}</td>
-              <td>${storage_subs[sub.body][2]}</td>
-              <td>${sub.body}</td>
-              <td><a href=${storage_subs[sub.body][1]}>Unsubscribe</a></td>
-            </tr>`
-  ).join("")
-    }
+          ${all_subs.map(sub => `<tr>
+            <td>${sub.title}</td>
+            <td>${sub.body}</td>
+            <td><a href=${storage_subs[sub.body][1]}>Unsubscribe</a></td>
+            <td>Move to trash</td>
+          </tr>`).join("")}
         </tbody>`;
   return table;
 }
