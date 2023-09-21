@@ -9,6 +9,8 @@ export default function SubscriptionTable({ all_subs, storage_subs, render }) {
     id: "delete-selected-btn",
     innerText: "Delete selected",
     onClick: async () => {
+      if (selectedSubs.size === 0) return;
+
       const storage = await chrome.storage.local.get([c.ALL_SUBS]);
       for (const sender of selectedSubs) {
         delete storage[c.ALL_SUBS][sender];

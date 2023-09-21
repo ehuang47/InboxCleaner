@@ -68,15 +68,6 @@ function initUI() {
   // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
   sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
     sdkViews.customRoute = customRouteView;
-    // chrome.storage.local.get([c.ALL_SUBS]).then(storage => {
-    //   if (!storage.hasOwnProperty(c.ALL_SUBS)) { // possibly first time
-    //     sdk.Widgets.showModalView({
-    //       el: ui.Instructions(),
-    //       title: "Tips",
-    //       constrainTitleWidth: true
-    //     });
-    //   }
-    // });
     renderUI(customRouteView, currentSubsView);
   });
 }
@@ -120,10 +111,15 @@ async function renderUI(customRouteView, currentSubsView) {
       }
 
       parent.innerHTML = `
-      <h3>Subscriptions</h3>
-      <span>${last_synced}</span>
+      <div class="ic-flex-row">
+        <h3>Subscriptions</h3>
+        <span>${last_synced}</span>
+      </div>
       `;
-      parent.appendChild(ui.MyButton({
+
+      const btnContainer = document.createElement("div");
+      btnContainer.classList.add(["ic-flex-row"]);
+      btnContainer.appendChild(ui.MyButton({
         id: "sync-now-btn",
         innerText: "Sync Now",
         onClick: () => {
@@ -133,7 +129,7 @@ async function renderUI(customRouteView, currentSubsView) {
           });
         }
       }));
-      parent.appendChild(ui.MyButton({
+      btnContainer.appendChild(ui.MyButton({
         id: "reset-btn",
         innerText: "Reset",
         onClick: () => {
@@ -143,6 +139,8 @@ async function renderUI(customRouteView, currentSubsView) {
           });
         }
       }));
+
+      parent.children[0].appendChild(btnContainer);
       parent.appendChild(ui.Instructions());
       if (!storage_subs) return;
       parent.appendChild(ui.SubscriptionTable({ all_subs, storage_subs, render: () => { renderUI(customRouteView, currentSubsView); } }));
