@@ -68,15 +68,15 @@ function initUI() {
   // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
   sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
     sdkViews.customRoute = customRouteView;
-    chrome.storage.local.get([c.ALL_SUBS]).then(storage => {
-      if (!storage.hasOwnProperty(c.ALL_SUBS)) { // possibly first time
-        sdk.Widgets.showModalView({
-          el: ui.Instructions(),
-          title: "Tips",
-          constrainTitleWidth: true
-        });
-      }
-    });
+    // chrome.storage.local.get([c.ALL_SUBS]).then(storage => {
+    //   if (!storage.hasOwnProperty(c.ALL_SUBS)) { // possibly first time
+    //     sdk.Widgets.showModalView({
+    //       el: ui.Instructions(),
+    //       title: "Tips",
+    //       constrainTitleWidth: true
+    //     });
+    //   }
+    // });
     renderUI(customRouteView, currentSubsView);
   });
 }
@@ -145,7 +145,7 @@ async function renderUI(customRouteView, currentSubsView) {
       }));
       parent.appendChild(ui.Instructions());
       if (!storage_subs) return;
-      parent.appendChild(ui.SubscriptionTable({ all_subs, storage_subs }));
+      parent.appendChild(ui.SubscriptionTable({ all_subs, storage_subs, render: () => { renderUI(customRouteView, currentSubsView); } }));
     }
   } catch (e) {
     console.warn("content.js error", e);
