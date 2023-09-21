@@ -10,7 +10,7 @@ export function Instructions() {
   return div;
 }
 
-export function SubscriptionTable(all_subs, storage_subs) {
+export function SubscriptionTable({ all_subs, storage_subs }) {
   const table = document.createElement("table");
   table.innerHTML = `<thead>
           <tr>
@@ -32,4 +32,12 @@ export function SubscriptionTable(all_subs, storage_subs) {
     }
         </tbody>`;
   return table;
+}
+
+export function MyButton({ id, innerText, onClick }) {
+  const button = document.createElement("button",);
+  button.innerText = innerText;
+  button.id = id;
+  button.addEventListener("click", onClick);
+  return button;
 }
