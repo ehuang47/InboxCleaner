@@ -29,10 +29,12 @@ export default class EmailService {
         threadParsingOperations = [];
 
       while (pageToken != null && thread_count < maxThreads && !storage.redundant_emails) {
+        if (storage.redundant_emails) break;
         const threadList = await this.emailDao.getThreadList(pageToken, maxResults);
         thread_count += threadList.threads.length;
         pageToken = threadList.nextPageToken;
         for (const thread of threadList.threads) {
+          if (storage.redundant_emails) break;
           const parsingOp = this.emailDao.getThreadData(thread)
             .then(async (threadData) => {
               const wasAlreadyParsed = emailUtils.checkAlreadyParsed(storage, threadData);

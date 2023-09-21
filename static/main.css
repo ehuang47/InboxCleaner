@@ -1,0 +1,54 @@
+:root {
+  --secondary-color: #edeff1;
+  --shadow-color: #949597;
+  --hover-color: #f2f2f2;
+}
+
+.ic-container {
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-size: 14px;
+}
+
+.ic-flex-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ic-table,
+.ic-table td,
+.ic-table th {
+  border: 1px solid var(--secondary-color);
+  border-collapse: collapse;
+}
+
+.ic-table td,
+.ic-table th {
+  padding: 0 0.5rem;
+}
+
+.ic-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ic-icon:hover {
+  cursor: pointer;
+  background-color: var(--hover-color);
+}
+
+.ic-table td.subscription-action:hover {
+  cursor: pointer;
+  box-shadow: 0 0 4px var(--shadow-color);
+}
+
+.ic-mb {
+  margin-bottom: 1rem;
+}

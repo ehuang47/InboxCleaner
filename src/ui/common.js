@@ -3,8 +3,8 @@ export function Instructions() {
   div.innerHTML = `
   <details>
     <summary>Tips</summary>
-    <p>If you haven't already, press "Sync Now" to find all email subscriptions. This only checks the most recent emails you received since the last time you synced. If you'd like to re-scan everything, please reset and sync again.</p>
-    <h4>Things you can do:</h4>
+    <p>Press "Sync Now" to find all email subscriptions (checks most recent emails since last synced). <br> If you want to scan everything, please reset and sync again.</p>
+    <h4>What can this extension do?</h4>
     <ol>
     <li id="li-0">Click the sender address if you'd like to search and filter all their threads.</li>
     <li id="li-1">Click the "Unsubscribe" link to navigate to the webpage to process your unsubscription.</li>
@@ -16,10 +16,11 @@ export function Instructions() {
   return div;
 }
 
-export function MyButton({ id, innerText, onClick }) {
+export function MyButton({ id, innerText, classes, onClick }) {
   const button = document.createElement("button",);
   button.innerText = innerText;
   button.id = id;
   button.addEventListener("click", onClick);
+  button.classList.add(classes);
   return button;
 }

@@ -42,10 +42,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         start = storage.start ?? null;
 
       switch (message.message) {
-        case c.OPEN_NEW_TAB: {
-          chrome.tabs.create({ url: message.url });
-          break;
-        }
         case c.SYNC: {
           const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           start = new Date().getTime();
@@ -66,20 +62,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
-        case c.CONTENT_INIT:
-        case c.AUTH_USER:
-          await handleAuthUser(message, sender, sendResponse);
-          break;
         default:
           console.log("message not handled", message.message);
       }
-      // TODO: footer button onclick that deletes all the null-unsub link rows and refreshes tab
     } catch (e) {
       console.warn("error runtime.onMessage.listener", e);
     }
   })();
   return true;
 });
-
-//* Gmail API OAuth2
-// TODO: have user click a button (maybe on popup?) in order to activate interactive signin and access token, so that u can brief them why they need to sign in
