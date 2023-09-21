@@ -66,7 +66,7 @@ function initUI() {
 
 
   // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
-  unregisterHandlers[unregisterHandlers.length] = sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
+  sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
     sdkViews.customRoute = customRouteView;
     chrome.storage.local.get([c.ALL_SUBS]).then(storage => {
       if (!storage.hasOwnProperty(c.ALL_SUBS)) { // possibly first time
@@ -81,6 +81,11 @@ function initUI() {
   });
 }
 
+function removeHandlers() {
+  unregisterHandlers.forEach(fn => fn());
+  unregisterHandlers.length = 0;
+}
+
 async function renderUI(customRouteView, currentSubsView) {
   try {
     const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
@@ -89,6 +94,7 @@ async function renderUI(customRouteView, currentSubsView) {
     await updateCurrentSubCount();
     await loadSubscriptionRoute();
 
+    removeHandlers();
     unregisterHandlers[unregisterHandlers.length] = sdk.Lists.registerThreadRowViewHandler(contentUtils.labelThreadRowViews(storage_subs));
 
     async function updateCurrentSubCount() {
