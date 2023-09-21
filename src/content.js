@@ -12,11 +12,19 @@ const customRouteIds = {
   SUBSCRIPTIONS: "subscriptions"
 };
 const unregisterHandlers = [];
+let loadingMessage;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.message) {
     case c.UPDATED_SUBSCRIBERS: {
+      loadingMessage?.destroy();
       renderUI(sdkViews.customRoute, sdkViews.currentSubs);
+      const msg = sdk.ButterBar.showMessage({
+        text: "Subscriptions updated successfully!"
+      });
+      setTimeout(() => {
+        msg.destroy();
+      }, 2000);
       break;
     }
     default:
@@ -60,6 +68,15 @@ function initUI() {
   // grab a list of emails? from the current inbox, display most recent 50 of unique emails, list email and sender and thread name
   unregisterHandlers[unregisterHandlers.length] = sdk.Router.handleCustomRoute(customRouteIds.SUBSCRIPTIONS, (customRouteView) => {
     sdkViews.customRoute = customRouteView;
+    chrome.storage.local.get([c.ALL_SUBS]).then(storage => {
+      if (!storage.hasOwnProperty(c.ALL_SUBS)) { // possibly first time
+        sdk.Widgets.showModalView({
+          el: ui.Instructions(),
+          title: "Tips",
+          constrainTitleWidth: true
+        });
+      }
+    });
     renderUI(customRouteView, currentSubsView);
   });
 }
@@ -104,6 +121,9 @@ async function renderUI(customRouteView, currentSubsView) {
         innerText: "Sync Now",
         onClick: () => {
           chrome.runtime.sendMessage({ message: c.SYNC });
+          loadingMessage = sdk.ButterBar.showLoading({
+            text: "Syncing all emails..."
+          });
         }
       }));
       parent.appendChild(ui.MyButton({
@@ -111,13 +131,15 @@ async function renderUI(customRouteView, currentSubsView) {
         innerText: "Reset",
         onClick: () => {
           chrome.runtime.sendMessage({ message: c.RESET });
+          loadingMessage = sdk.ButterBar.showLoading({
+            text: "Resetting stored subscriptions..."
+          });
         }
       }));
       parent.appendChild(ui.Instructions());
+      if (!storage_subs) return;
       parent.appendChild(ui.SubscriptionTable({ all_subs, storage_subs }));
     }
-
-
   } catch (e) {
     console.warn("content.js error", e);
   }
