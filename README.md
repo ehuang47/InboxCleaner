@@ -24,11 +24,12 @@ InboxCleaner
 
 ## Features
 
-As of 9/20/2023, InboxCleaner only supports the following:
+As of 9/20/2023, InboxCleaner supports the following features:
 
 - `Sync Now` is a button that will begin gathering the subscribed emails from your inbox.
 - `Reset` is the clickable 'instructions' paragraph that will empty the browser storage of all email data.
 - `Unsubscribe` is the clickable text that navigates you to the url where you can submit the unsubscription form.
+- Clicking the sender/email address will automatically search for all their messages, allowing you to view them individually.
 
 ## Other
 

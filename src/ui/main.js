@@ -13,6 +13,31 @@ export function Instructions() {
 export function SubscriptionTable({ all_subs, storage_subs }) {
   const table = document.createElement("table");
   table.classList.add(["ic-table"]);
+  table.addEventListener("click", (e) => {
+    switch (e.target.getAttribute("name")) {
+      case "address": {
+        let searchForm;
+        for (const form of document.forms) {
+          if (form.role !== "search") continue;
+          else {
+            searchForm = form;
+            break;
+          }
+        }
+        for (const el of searchForm.elements) {
+          if (el instanceof HTMLInputElement) {
+            el.value = e.target.innerText;
+          } else if (el.ariaLabel === "Search mail") {
+            el.click();
+          }
+        }
+      }
+      case "move-trash": {
+        break;
+      }
+      default:
+    }
+  });
   table.innerHTML = `<thead>
           <tr>
             <th>Sender</th>
@@ -23,9 +48,9 @@ export function SubscriptionTable({ all_subs, storage_subs }) {
         <tbody>
           ${all_subs.map(sub => `<tr>
             <td>${sub.title}</td>
-            <td>${sub.body}</td>
+            <td class="subscription-action" name="address">${sub.body}</td>
             <td><a href=${storage_subs[sub.body][1]}>Unsubscribe</a></td>
-            <td>Move to trash</td>
+            <td class="subscription-action" name="move-trash">Move to trash</td>
           </tr>`).join("")}
         </tbody>`;
   return table;
