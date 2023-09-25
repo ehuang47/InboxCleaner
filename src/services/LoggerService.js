@@ -14,12 +14,15 @@ export default class LoggerService {
       return;
     }
 
-    console.log(`%c--LOGGER-- %c${message}`, "color: #717171", getTitleColor());
-    if (data) console.log(data);
+    console.log(`%c--LOGGER-- %c${message}`, "color: #717171", getTitleColor(), { data });
+
 
     function getTitleColor() {
       switch (type) {
-        case "error": return "color: #d93e3e;";
+        case "error": {
+          console.trace();
+          return "color: #d93e3e;";
+        }
         case "info": return "color: #1670d2;";
         default: return "color: #548a54;";
       }

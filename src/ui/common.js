@@ -2,7 +2,7 @@ export function Instructions() {
   const div = document.createElement("div");
   div.innerHTML = `
   <details>
-    <summary>Tips</summary>
+    <summary>How do I use this?</summary>
     <p>Press "Sync Now" to find all email subscriptions (checks most recent emails since last synced). <br> If you want to scan everything, please reset and sync again.</p>
     <h4>What can this extension do?</h4>
     <ol>

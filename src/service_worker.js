@@ -1,11 +1,15 @@
 import "@inboxsdk/core/background.js";
 import EmailService from "./services/EmailService";
 import * as c from "./constants";
+import logger from "./services/LoggerService";
 
 // when extension is installed, updated, or chrome is updated
 chrome.runtime.onInstalled.addListener((details) => {
   // gets previous extension version, reason "oninstalled" activated, and maybe ID
-  console.log("Triggered onInstalled due to: " + details.reason);
+  logger.shared.log({
+    message: "Triggered onInstalled due to: " + details.reason,
+    type: "info"
+  });
 
   // setting rules for page actions & taking action when accessing a page that meets all criteria
   chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
@@ -31,20 +35,28 @@ chrome.offscreen.createDocument({
 
 // handle communication between content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log(message, sender);
+  logger.shared.log({
+    data: { message, sender },
+    message: "received message",
+    type: "info"
+  });
   (async () => {
     try {
 
       switch (message.message) {
         case c.SYNC: {
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+
           const { last_synced } = await chrome.storage.local.get([c.LAST_SYNCED]);
-          console.log("Sync in progress. Last synced at: ", last_synced);
+          logger.shared.log({
+            message: "Sync in progress. Last synced at: " + last_synced,
+            type: "info"
+          });
 
           const start = new Date().getTime();
           await chrome.storage.local.set({ start });
 
           await EmailService.shared.syncAllThreads();
-          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
@@ -62,10 +74,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
         default:
-          console.log("message not handled", message.message);
+          logger.shared.log({
+            data: message.message,
+            message: "message not handled",
+            type: "info"
+          });
       }
     } catch (e) {
-      console.warn("error runtime.onMessage.listener", e);
+      logger.shared.log({
+        data: e,
+        message: "error runtime.onMessage.listener",
+        type: "error"
+      });
     }
   })();
   return true;

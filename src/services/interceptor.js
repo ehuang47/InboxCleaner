@@ -1,7 +1,7 @@
 import "regenerator-runtime/runtime";
 import axios from "axios";
 import fetchAdapter from "./vespaiach/axios-fetch-adapter";
-
+import logger from "./LoggerService";
 /* Useful config properties
 baseURL, timeout, params, headers, data,
 xsrfCookieName, xsrfHeaderName, cancelToken, withCredentials
@@ -19,7 +19,11 @@ export function axiosWithRetry(retryCount = 0) {
     else config.headers = { "Authorization": `Bearer ${token}` };
     return config;
   }, (e) => {
-    console.log("Request Error: ", e);
+    logger.shared.log({
+      data: e,
+      message: "Request Error: ",
+      type: "error"
+    });
     return Promise.reject(e);
   });
 
@@ -30,8 +34,11 @@ export function axiosWithRetry(retryCount = 0) {
     // Status not 2xx
     // Handle individual status codes, maybe clearing cookies/storage
     // If unauthorized, send another request for a refresh token
-    console.log(`${counter} times, Response Error: `, e);
-
+    logger.shared.log({
+      data: e,
+      message: `${counter} times, Response Error: `,
+      type: "error"
+    });
     switch (e.response?.status) {
       case 401:
         break;

@@ -2,6 +2,7 @@ import * as InboxSDK from '@inboxsdk/core';
 import * as c from "./constants.js";
 import * as contentUtils from "./utils/content-utils.js";
 import ui from "./ui";
+import logger from './services/LoggerService.js';
 
 const sdkViews = {
   customRoute: null,
@@ -28,27 +29,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
     }
     default:
-      console.log("unknown handler", request.message);
+      logger.shared.log({
+        data: request.message,
+        message: "unknown handler",
+        type: "info"
+      });
   }
   sendResponse();
 });
 
-function log() {
-  console.log.apply(
-    console,
-    ['custom-view'].concat(Array.prototype.slice.call(arguments)),
-  );
-}
-
 sdk.Router.handleAllRoutes(function (routeView) {
-  log(
-    'id',
-    routeView.getRouteID(),
-    'type',
-    routeView.getRouteType(),
-    'params',
-    routeView.getParams(),
-  );
+  logger.shared.log({
+    data: routeView.getParams(),
+    message: `id: ${routeView.getRouteID()}, type: ${routeView.getRouteType()}, params:`,
+    type: "info"
+  });
 });
 
 initUI();
@@ -101,7 +96,11 @@ async function renderUI(customRouteView, currentSubsView) {
     async function loadSubscriptionRoute() {
       const parent = customRouteView.getElement();
       parent.classList.add(["ic-container"]);
-      console.log(parent);
+      logger.shared.log({
+        data: parent,
+        message: `custom route view parent element`,
+        type: "info"
+      });
 
       let last_synced = "";
       const all_subs = [];

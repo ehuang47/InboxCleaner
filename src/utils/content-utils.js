@@ -1,9 +1,14 @@
+import logger from "../services/LoggerService";
 export function formatAllSubs(storage_subs, all_subs) {
   if (storage_subs && Object.keys(storage_subs).length > 0) {
     const subs = storage_subs;
     for (const key in subs) {
       // key = email, subs = { [name, unsub link, isSubscribed bool], ... }
-      // console.log(key, subs[key]);
+      // logger.shared.log({
+      //   data: { key, sub: subs[key] },
+      //   message: "transforming subs from",
+      //   type: "info"
+      // });
       all_subs.push({
         title: subs[key][0],
         body: key,
@@ -18,20 +23,6 @@ export function formatAllSubs(storage_subs, all_subs) {
     return true;
   }
   return false;
-}
-
-export function registerRowHandlers(storage_subs) {
-  let node_list = document.querySelectorAll(".inboxsdk__resultsSection_tableRow.zA.yO");
-  for (let i = 0; i < node_list.length; i++) {
-    var spans = node_list[i].querySelectorAll("span");
-    // console.log(spans[0], spans[1], spans[2]); // should be sender, email, unsubscribe link
-    let key = spans[1].innerText;
-    spans[2].addEventListener("click", (e) => {
-      storage_subs[key][2] = false;
-      chrome.storage.local.set({ [c.ALL_SUBS]: storage_subs });
-      chrome.runtime.sendMessage({ message: c.OPEN_NEW_TAB, url: storage_subs[key][1] });
-    });
-  }
 }
 
 export function labelThreadRowViews(storage_subs) {

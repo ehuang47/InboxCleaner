@@ -1,9 +1,13 @@
 import * as c from "../../constants";
+import logger from "../LoggerService";
 // https://exceptionshub.com/gmail-api-parse-message-content-base64-decoding-with-javascript.html
 // https://stackoverflow.com/questions/24811008/gmail-api-decoding-messages-in-javascript
 // recursion to traverse the messageparts and acquire the decoded text/html
 export function parseMessagePart(part) {
-  // console.log(part.mimeType, "\n", part.body, "\n", part.parts);
+  // logger.shared.log({
+  //   message: part.mimeType + "\n" + part.body + "\n"+ part.parts,
+  //   type: "info"
+  // });
   if (part == null || part.mimeType === "text/plain") return "";
   if (part.mimeType === "text/html")
     return atob(part.body.data.replace(/-/g, "+").replace(/_/g, "/"));
@@ -22,7 +26,10 @@ export function getHeaderUnsubLink(headers) {
   for (var i in headers) {
     let header = headers[i];
     if (header.name === "List-Unsubscribe") {
-      // console.log(header.value);
+      // logger.shared.log({
+      //   message: `header.value ${header.value}`,
+      //   type: "info"
+      // });
       // some headers are strange in that its a pair <unsub link, mail link> or it lacks the url so its just <mail-link>
       let http_or_mail = header.value.split(",")[0].slice(1, -1);
       return http_or_mail.match(/^https?:\/\/[^t][^r][^k]/) ? http_or_mail : null;
@@ -33,12 +40,20 @@ export function getHeaderUnsubLink(headers) {
 
 // look in email headers to find the sender name and email
 export function getSender(headers) {
-  // console.log("getSender", headers);
+  // logger.shared.log({
+  //   data: headers,
+  //   message: "getSender",
+  //   type: "info"
+  // });
   for (var i in headers) {
     let header = headers[i];
     if (header.name === "From") {
       let data = header.value.split(" <");
-      // console.log(header, data);
+      // logger.shared.log({
+      //   data: {header, data},
+      //   message: "getSender from",
+      //   type: "info"
+      // });
       // some headers solely have an email value, so splitting returns array of size 1
       return data[1] != null
         ? { name: data[0], email: data[1].slice(0, -1) }
@@ -57,14 +72,19 @@ export async function getStoredThreads() {
 }
 
 export async function updateStoredThreads(storage) {
-  console.log(storage.all_subs);
+  logger.shared.log({
+    data: storage.all_subs,
+    message: "updating storage with new subscriber list",
+  });
   chrome.storage.local.set({
     ...storage,
     [c.LAST_SYNCED]: new Date().getTime()
   });
   let elapsed = new Date().getTime() - storage.start;
   var mins = elapsed / 60000;
-  console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
+  logger.shared.log({
+    message: mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec",
+  });
 }
 
 export async function getUnsubLink(threadDataPayload) {

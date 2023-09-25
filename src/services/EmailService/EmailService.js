@@ -33,7 +33,11 @@ export default class EmailService {
         const threadList = await this.emailDao.getThreadList(pageToken, maxResults);
         numThreadsParsed += threadList.threads.length;
         pageToken = threadList.nextPageToken;
-        console.log(numThreadsParsed, threadList.threads);
+        this.logger.log({
+          data: threadList.threads,
+          message: `parsed ${numThreadsParsed} threads`,
+          type: "info"
+        });
         for (const thread of threadList.threads) {
           if (hasParsedThreadBefore) break;
           const parsingOp = this.emailDao.getThreadData(thread.id)
@@ -58,10 +62,8 @@ export default class EmailService {
       await Promise.all(threadParsingOperations); // finish processing all thread lists
       await emailUtils.updateStoredThreads(storage);
     } catch (e) {
-      console.log(e);
-      console.trace();
       this.logger.log({
-        message: e.message,
+        message: e,
         type: "error"
       });
     }
@@ -75,10 +77,8 @@ export default class EmailService {
         this.emailDao.trashThread(threadId);
       });
     } catch (e) {
-      console.log(e);
-      console.trace();
       this.logger.log({
-        message: e.message,
+        message: e,
         type: "error"
       });
     }
