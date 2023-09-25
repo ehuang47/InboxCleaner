@@ -22,7 +22,7 @@ export default class EmailService {
       const storage = await emailUtils.getStoredThreads();
 
       //todo change maxThreads & maxResults for testing. limit is x/500
-      let maxThreads = 500,
+      let maxThreads = 3000,
         maxResults = 500,
         thread_count = 0,
         pageToken = "",
@@ -33,6 +33,7 @@ export default class EmailService {
         const threadList = await this.emailDao.getThreadList(pageToken, maxResults);
         thread_count += threadList.threads.length;
         pageToken = threadList.nextPageToken;
+        console.log(thread_count, threadList.threads);
         for (const thread of threadList.threads) {
           if (storage.redundant_emails) break;
           const parsingOp = this.emailDao.getThreadData(thread)
@@ -44,7 +45,9 @@ export default class EmailService {
               if (!unsubLink) return;
               const { name, email } = emailUtils.getSender(threadPayload.headers);
               if (!storage.all_subs.hasOwnProperty(email)) {
-                storage.all_subs[email] = [name, unsubLink, true];
+                storage.all_subs[email] = [name, unsubLink, true, [threadData.id]];
+              } else {
+                storage.all_subs[email][3].push(threadData.id);
               }
             });
 
@@ -54,6 +57,23 @@ export default class EmailService {
 
       await Promise.all(threadParsingOperations); // finish processing all thread lists
       await emailUtils.updateStoredThreads(storage);
+    } catch (e) {
+      console.log(e);
+      console.trace();
+      this.logger.log({
+        message: e.message,
+        type: "error"
+      });
+    }
+  }
+
+  async trashAllSenderThreads(sender) {
+    try {
+      const storage = await emailUtils.getStoredThreads();
+      const threadIds = storage.all_subs[sender][3];
+      threadIds.forEach(threadId => {
+        this.emailDao.trashThread(threadId);
+      });
     } catch (e) {
       console.log(e);
       console.trace();

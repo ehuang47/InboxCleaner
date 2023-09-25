@@ -48,7 +48,7 @@ export function getSender(headers) {
 }
 
 export async function getStoredThreads() {
-  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START, c.ACCESS_TOKEN, c.TOKEN_TYPE]);
+  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
 
   storage.all_subs = storage.all_subs ?? {};
   storage.last_synced = storage.last_synced ?? null;

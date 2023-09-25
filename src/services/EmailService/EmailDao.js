@@ -1,5 +1,5 @@
 import LoggerService from "../LoggerService";
-import axios from "../interceptor";
+import axios, { axiosWithRetry } from "../interceptor";
 export default class EmailDao {
   _shared;
   logger;
@@ -16,6 +16,7 @@ export default class EmailDao {
   async getThreadList(pageToken, maxResults) {
     return this.logger.forRequests({
       callback: async () => {
+        const axios = axiosWithRetry(5);
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads?`;
         const res = await axios.get(url, {
           params: { pageToken, maxResults }
@@ -31,6 +32,7 @@ export default class EmailDao {
   async getThreadData(thread) {
     return this.logger.forRequests({
       callback: async () => {
+        const axios = axiosWithRetry(5);
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
         const res = await axios.get(url);
         return res.data;
@@ -38,6 +40,19 @@ export default class EmailDao {
       loadingMsg: "Loading thread data for id: " + thread.id,
       successMsg: "Loaded thread data for id: " + thread.id,
       errorMsg: "failed to get thread data"
+    });
+  }
+
+  async trashThread(threadId) {
+    return this.logger.forRequests({
+      callback: async () => {
+        const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/trash`;
+        const res = await axios.post(url);
+        return res.data;
+      },
+      loadingMsg: "Trashing thread with id: " + threadId,
+      successMsg: "Trashed thread with id: " + threadId,
+      errorMsg: "failed to trash thread"
     });
   }
 }

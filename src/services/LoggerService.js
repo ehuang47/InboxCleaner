@@ -28,10 +28,10 @@ export default class LoggerService {
 
   async forRequests({ callback, successMsg, loadingMsg, errorMsg }) {
     try {
-      this.log({
-        message: loadingMsg,
-        type: "info"
-      });
+      // this.log({
+      //   message: loadingMsg,
+      //   type: "info"
+      // });
       const successData = await callback();
       // this.log({
       //   data: successData,

@@ -57,8 +57,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         case c.RESET: {
           // mostly for testing, if you need to clear out subscriber list
-          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           await chrome.storage.local.clear();
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+          break;
+        }
+        case c.TRASH_SENDER_THREADS: {
+          await EmailService.shared.trashAllSenderThreads(message.data); //todo: include sender id in message
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
