@@ -22,8 +22,9 @@ export default class EmailService {
       const storage = await emailUtils.getStoredThreads();
       let hasParsedThreadBefore = false;
 
-      // const { threadsTotal } = await this.emailDao.getUserProfile();
-      let maxThreads = 500, // threadsTotal
+      const { threadsTotal } = await this.emailDao.getUserProfile();
+      let maxThreads = threadsTotal,
+        // let maxThreads = 500,
         maxResults = 500,
         numThreadsParsed = 0,
         pageToken = "",
@@ -66,6 +67,7 @@ export default class EmailService {
         message: e,
         type: "error"
       });
+      throw new Error("Error syncing all threads");
     }
   }
 
@@ -73,14 +75,14 @@ export default class EmailService {
     try {
       const storage = await emailUtils.getStoredThreads();
       const threadIds = storage.all_subs[sender][3];
-      threadIds.forEach(threadId => {
-        this.emailDao.trashThread(threadId);
-      });
+      const trashOperations = threadIds.map(threadId => this.emailDao.trashThread(threadId));
+      return Promise.all(trashOperations);
     } catch (e) {
       this.logger.log({
         message: e,
         type: "error"
       });
+      throw new Error("Error trashing all sender's threads");
     }
   }
 }

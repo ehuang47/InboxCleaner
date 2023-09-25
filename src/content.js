@@ -16,26 +16,42 @@ const unregisterHandlers = [];
 let loadingMessage;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  switch (request.message) {
-    case c.UPDATED_SUBSCRIBERS: {
-      loadingMessage?.destroy();
-      renderUI(sdkViews.customRoute, sdkViews.currentSubs);
-      const msg = sdk.ButterBar.showMessage({
-        text: "Subscriptions updated successfully!"
-      });
-      setTimeout(() => {
-        msg.destroy();
-      }, 2000);
-      break;
+  (async () => {
+    loadingMessage?.destroy();
+    let msg;
+    switch (request.message) {
+      case c.UPDATED_SUBSCRIBERS: {
+        msg = sdk.ButterBar.showMessage({
+          text: "Subscriptions successfully updated."
+        });
+        await renderUI(sdkViews.customRoute, sdkViews.currentSubs);
+        break;
+      }
+      case c.TRASH_SENDER_THREADS: {
+        msg = sdk.ButterBar.showMessage({
+          text: "Threads moved to Trash."
+        });
+        break;
+      }
+      case c.ERROR: {
+        msg = sdk.ButterBar.showError({
+          text: "There was a problem. Please try again later."
+        });
+        break;
+      }
+      default:
+        logger.shared.log({
+          data: request.message,
+          message: "unknown handler",
+          type: "info"
+        });
     }
-    default:
-      logger.shared.log({
-        data: request.message,
-        message: "unknown handler",
-        type: "info"
-      });
-  }
-  sendResponse();
+    setTimeout(() => {
+      msg.destroy();
+    }, 2000);
+    sendResponse();
+  })();
+  return true;
 });
 
 sdk.Router.handleAllRoutes(function (routeView) {
@@ -144,7 +160,17 @@ async function renderUI(customRouteView, currentSubsView) {
       parent.children[0].appendChild(btnContainer);
       parent.appendChild(ui.Instructions());
       if (!storage_subs) return;
-      parent.appendChild(ui.SubscriptionTable({ all_subs, storage_subs, render: () => { renderUI(customRouteView, currentSubsView); } }));
+      parent.appendChild(ui.SubscriptionTable({
+        all_subs,
+        storage_subs,
+        render: () => { renderUI(customRouteView, currentSubsView); },
+        onTrashThreads: (sender) => {
+          chrome.runtime.sendMessage({ message: c.TRASH_SENDER_THREADS, data: sender });
+          loadingMessage = sdk.ButterBar.showLoading({
+            text: "Moving threads to Trash..."
+          });
+        }
+      }));
     }
   } catch (e) {
     console.warn("content.js error", e);

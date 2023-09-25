@@ -1,7 +1,7 @@
 import * as c from "../constants";
 import { MyButton } from "./common";
 
-export default function SubscriptionTable({ all_subs, storage_subs, render }) {
+export default function SubscriptionTable({ all_subs, storage_subs, render, onTrashThreads }) {
   const selectedSubs = new Set();
 
   const container = document.createElement("div");
@@ -42,8 +42,12 @@ export default function SubscriptionTable({ all_subs, storage_subs, render }) {
             el.click();
           }
         }
+        break;
       }
       case "move-trash": {
+        const parentRow = e.target.closest("tr");
+        const sender = parentRow.id;
+        onTrashThreads(sender);
         break;
       }
       case "delete-subscription": {
@@ -125,7 +129,7 @@ export default function SubscriptionTable({ all_subs, storage_subs, render }) {
             <td>${sub.title}</td>
             <td class="subscription-action" name="address">${sub.body}</td>
             <td><a href=${storage_subs[sub.body][1]}>Unsubscribe</a></td>
-            <td class="subscription-action" name="move-trash">Trash threads</td>
+            <td class="subscription-action" name="move-trash">Trash ${storage_subs[sub.body][3].length} threads</td>
             <td>
               <div class="ic-icon" name="delete-subscription">
               ${trashIcon({ name: "delete-subscription" })}

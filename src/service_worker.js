@@ -41,11 +41,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     type: "info"
   });
   (async () => {
+    let tab;
     try {
+      const queriedTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      tab = queriedTabs[0];
       switch (message.message) {
         case c.SYNC: {
-          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-
           const { last_synced } = await chrome.storage.local.get([c.LAST_SYNCED]);
           logger.shared.log({
             message: "Sync in progress. Last synced at: " + last_synced,
@@ -62,14 +63,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case c.RESET: {
           // mostly for testing, if you need to clear out subscriber list
           await chrome.storage.local.clear();
-          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
         case c.TRASH_SENDER_THREADS: {
-          await EmailService.shared.trashAllSenderThreads(message.data); //todo: include sender id in message
-          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+          await EmailService.shared.trashAllSenderThreads(message.data);
+          chrome.tabs.sendMessage(tab.id, { message: c.TRASH_SENDER_THREADS });
           break;
         }
         default:
@@ -85,6 +84,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         message: "error runtime.onMessage.listener",
         type: "error"
       });
+      chrome.tabs.sendMessage(tab.id, { message: c.ERROR });
     }
   })();
   return true;

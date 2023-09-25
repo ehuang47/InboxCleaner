@@ -59,6 +59,7 @@ export default class EmailDao {
   async trashThread(threadId) {
     return this.logger.forRequests({
       callback: async () => {
+        const axios = axiosWithRetry(5);
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/trash`;
         const res = await axios.post(url);
         return res.data;
