@@ -34,24 +34,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message, sender);
   (async () => {
     try {
-      const storage = await chrome.storage.local
-        .get([c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
-
-      let last_synced = storage.last_synced ?? null,
-        redundant_emails = storage.redundant_emails ?? false,
-        start = storage.start ?? null;
 
       switch (message.message) {
         case c.SYNC: {
-          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-          start = new Date().getTime();
-          redundant_emails = false; // reset bool for every sync request
-          await chrome.storage.local.set({ start, redundant_emails });
-
-          // see if we've synced before, and use the existing subscriber list & sync time
-          // if (Object.keys(all_subs).length != 0)
+          const { last_synced } = await chrome.storage.local.get([c.LAST_SYNCED]);
           console.log("Sync in progress. Last synced at: ", last_synced);
+
+          const start = new Date().getTime();
+          await chrome.storage.local.set({ start });
+
           await EmailService.shared.syncAllThreads();
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }

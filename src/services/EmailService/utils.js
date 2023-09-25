@@ -48,11 +48,10 @@ export function getSender(headers) {
 }
 
 export async function getStoredThreads() {
-  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.REDUNDANT_EMAILS, c.START]);
+  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.START]);
 
   storage.all_subs = storage.all_subs ?? {};
   storage.last_synced = storage.last_synced ?? null;
-  storage.redundant_emails = storage.redundant_emails ?? false;
   storage.start = storage.start ?? null;
   return storage;
 }
@@ -60,22 +59,12 @@ export async function getStoredThreads() {
 export async function updateStoredThreads(storage) {
   console.log(storage.all_subs);
   chrome.storage.local.set({
-    [c.ALL_SUBS]: storage.all_subs,
+    ...storage,
     [c.LAST_SYNCED]: new Date().getTime()
   });
   let elapsed = new Date().getTime() - storage.start;
   var mins = elapsed / 60000;
   console.log(mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec");
-}
-
-export function checkAlreadyParsed(storage, threadData) {
-  const msg = threadData.messages[0];
-  if (msg.internalDate < storage.last_synced) {
-    // an old email thread that we've already scanned, so set redundant_emails to true
-    storage.redundant_emails = true;
-    return true;
-  }
-  return false;
 }
 
 export async function getUnsubLink(threadDataPayload) {

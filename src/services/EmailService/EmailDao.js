@@ -13,6 +13,19 @@ export default class EmailDao {
     this.logger = logger;
   }
 
+  async getUserProfile() {
+    return this.logger.forRequests({
+      callback: async () => {
+        const url = `https://gmail.googleapis.com/gmail/v1/users/me/profile`;
+        const res = await axios.get(url);
+        return res.data;
+      },
+      loadingMsg: "Loading user profile",
+      successMsg: "Loaded user profile",
+      errorMsg: "failed to get user profile"
+    });
+  }
+
   async getThreadList(pageToken, maxResults) {
     return this.logger.forRequests({
       callback: async () => {
@@ -29,16 +42,16 @@ export default class EmailDao {
     });
   }
 
-  async getThreadData(thread) {
+  async getThreadData(threadId) {
     return this.logger.forRequests({
       callback: async () => {
         const axios = axiosWithRetry(5);
-        const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${thread.id}`;
+        const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}`;
         const res = await axios.get(url);
         return res.data;
       },
-      loadingMsg: "Loading thread data for id: " + thread.id,
-      successMsg: "Loaded thread data for id: " + thread.id,
+      loadingMsg: "Loading thread data for id: " + threadId,
+      successMsg: "Loaded thread data for id: " + threadId,
       errorMsg: "failed to get thread data"
     });
   }

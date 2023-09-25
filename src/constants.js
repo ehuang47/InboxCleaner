@@ -1,7 +1,6 @@
 // for storage
 export const ALL_SUBS = "all_subs",
   LAST_SYNCED = "last_synced",
-  REDUNDANT_EMAILS = "redundant_emails",
   START = "start";
 
 // message types

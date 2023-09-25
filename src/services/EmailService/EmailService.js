@@ -20,30 +20,30 @@ export default class EmailService {
   async syncAllThreads() {
     try {
       const storage = await emailUtils.getStoredThreads();
+      let hasParsedThreadBefore = false;
 
-      //todo change maxThreads & maxResults for testing. limit is x/500
-      let maxThreads = 3000,
+      // const { threadsTotal } = await this.emailDao.getUserProfile();
+      let maxThreads = 500, // threadsTotal
         maxResults = 500,
-        thread_count = 0,
+        numThreadsParsed = 0,
         pageToken = "",
         threadParsingOperations = [];
 
-      while (pageToken != null && thread_count < maxThreads && !storage.redundant_emails) {
-        if (storage.redundant_emails) break;
+      while (pageToken != null && numThreadsParsed < maxThreads && !hasParsedThreadBefore) {
         const threadList = await this.emailDao.getThreadList(pageToken, maxResults);
-        thread_count += threadList.threads.length;
+        numThreadsParsed += threadList.threads.length;
         pageToken = threadList.nextPageToken;
-        console.log(thread_count, threadList.threads);
+        console.log(numThreadsParsed, threadList.threads);
         for (const thread of threadList.threads) {
-          if (storage.redundant_emails) break;
-          const parsingOp = this.emailDao.getThreadData(thread)
+          if (hasParsedThreadBefore) break;
+          const parsingOp = this.emailDao.getThreadData(thread.id)
             .then(async (threadData) => {
-              const wasAlreadyParsed = emailUtils.checkAlreadyParsed(storage, threadData);
-              if (wasAlreadyParsed) return;
-              const threadPayload = threadData.messages[0].payload;
-              const unsubLink = await emailUtils.getUnsubLink(threadPayload);
+              const { internalDate, payload } = threadData.messages[0];
+              hasParsedThreadBefore = internalDate < storage.last_synced;
+              if (hasParsedThreadBefore) return;
+              const unsubLink = await emailUtils.getUnsubLink(payload);
               if (!unsubLink) return;
-              const { name, email } = emailUtils.getSender(threadPayload.headers);
+              const { name, email } = emailUtils.getSender(payload.headers);
               if (!storage.all_subs.hasOwnProperty(email)) {
                 storage.all_subs[email] = [name, unsubLink, true, [threadData.id]];
               } else {
