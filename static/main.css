@@ -1,4 +1,5 @@
 :root {
+  --background-color: #f9fcfa;
   --secondary-color: #edeff1;
   --shadow-color: #949597;
   --hover-color: #f2f2f2;
@@ -16,6 +17,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
 .ic-table,
@@ -30,6 +32,13 @@
   padding: 0 0.5rem;
 }
 
+.ic-btn {
+  border: 0;
+  border-radius: 4rem;
+  background-color: var(--background-color);
+  padding: 0.5rem 1rem;
+}
+
 .ic-icon {
   width: 32px;
   height: 32px;
@@ -39,7 +48,8 @@
   align-items: center;
 }
 
-.ic-icon:hover {
+.ic-icon:hover,
+.ic-btn:hover {
   cursor: pointer;
   background-color: var(--hover-color);
 }

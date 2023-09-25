@@ -121,6 +121,7 @@ async function renderUI(customRouteView, currentSubsView) {
       btnContainer.appendChild(ui.MyButton({
         id: "sync-now-btn",
         innerText: "Sync Now",
+        classes: ["ic-btn"],
         onClick: () => {
           chrome.runtime.sendMessage({ message: c.SYNC });
           loadingMessage = sdk.ButterBar.showLoading({
@@ -131,6 +132,7 @@ async function renderUI(customRouteView, currentSubsView) {
       btnContainer.appendChild(ui.MyButton({
         id: "reset-btn",
         innerText: "Reset",
+        classes: ["ic-btn"],
         onClick: () => {
           chrome.runtime.sendMessage({ message: c.RESET });
           loadingMessage = sdk.ButterBar.showLoading({

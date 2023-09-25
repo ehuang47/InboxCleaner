@@ -8,7 +8,7 @@ export default function SubscriptionTable({ all_subs, storage_subs, render }) {
   container.appendChild(MyButton({
     id: "delete-selected-btn",
     innerText: "Delete selected",
-    classes: ["ic-mb"],
+    classes: ["ic-btn", "ic-mb"],
     onClick: async () => {
       if (selectedSubs.size === 0) return;
 

@@ -21,6 +21,6 @@ export function MyButton({ id, innerText, classes, onClick }) {
   button.innerText = innerText;
   button.id = id;
   button.addEventListener("click", onClick);
-  button.classList.add(classes);
+  button.classList.add(...classes);
   return button;
 }

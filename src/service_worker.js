@@ -42,7 +42,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   });
   (async () => {
     try {
-
       switch (message.message) {
         case c.SYNC: {
           const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
