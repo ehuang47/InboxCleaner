@@ -9,7 +9,7 @@ xsrfCookieName, xsrfHeaderName, cancelToken, withCredentials
 export function axiosWithRetry(retryCount = 0, startDelaySeconds = 0) {
   let counter = 0;
   const ax = axios.create({
-    timeout: 3000,
+    timeout: 15000,
     adapter: fetchAdapter
   });
 
@@ -39,11 +39,12 @@ export function axiosWithRetry(retryCount = 0, startDelaySeconds = 0) {
       message: `${counter} times at ${new Date().toLocaleString()}, Response Error: `,
       type: "error"
     });
-    switch (e.response?.status) {
+    switch (e.response?.status || e?.code) {
       case 401:
         break;
       case 403: // forbidden, user rate limit exceeded, etc.
       case 429: // too many requests
+      case "ECONNABORTED": // axios timeout
         if (counter < retryCount) {
           counter++;
           return new Promise(resolve => {
@@ -62,6 +63,7 @@ export function axiosWithRetry(retryCount = 0, startDelaySeconds = 0) {
       default:
         break;
     }
+
     return Promise.reject(e);
     // if (e) {
     //   if (e.response && e.response.status === 401)
