@@ -1,7 +1,7 @@
 import * as c from "../constants";
 import { MyButton } from "./common";
 
-export default function SubscriptionTable({ all_subs, storage_subs, render, onTrashThreads }) {
+export default function SubscriptionTable({ senderThreads, storageSubs, render, onTrashThreads }) {
   const selectedSubs = new Set();
 
   const container = document.createElement("div");
@@ -119,17 +119,17 @@ export default function SubscriptionTable({ all_subs, storage_subs, render, onTr
           </tr>
         </thead>
         <tbody>
-          ${all_subs.map(sub => `<tr id=${sub.body}>
+          ${Object.entries(storageSubs).map(([email, { name, unsubLink }]) => `<tr id=${email}>
             <td>
               <div class="ic-icon" name="subs-checkbox">
-                <input type="checkbox" id="${sub.body}-checkbox" name="subs-checkbox"/>
-                <label for="${sub.body}-checkbox" name="subs-checkbox"></label>
+                <input type="checkbox" id="${email}-checkbox" name="subs-checkbox"/>
+                <label for="${email}-checkbox" name="subs-checkbox"></label>
               </div>
             </td>
-            <td>${sub.title}</td>
-            <td class="subscription-action" name="address">${sub.body}</td>
-            <td><a href=${storage_subs[sub.body][1]}>Unsubscribe</a></td>
-            <td class="subscription-action" name="move-trash">Trash ${storage_subs[sub.body][3].length} threads</td>
+            <td>${name}</td>
+            <td class="subscription-action" name="address">${email}</td>
+            <td><a href=${unsubLink}>Unsubscribe</a></td>
+            <td class="subscription-action" name="move-trash">Trash ${senderThreads[email].length} threads</td>
             <td>
               <div class="ic-icon" name="delete-subscription">
               ${trashIcon({ name: "delete-subscription" })}

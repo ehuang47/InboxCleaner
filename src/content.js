@@ -1,6 +1,5 @@
 import * as InboxSDK from '@inboxsdk/core';
 import * as c from "./constants.js";
-import * as contentUtils from "./utils/content-utils.js";
 import ui from "./ui";
 import logger from './services/LoggerService.js';
 
@@ -83,21 +82,28 @@ function initUI() {
   });
 }
 
-function removeHandlers() {
-  unregisterHandlers.forEach(fn => fn());
-  unregisterHandlers.length = 0;
-}
-
 async function renderUI(customRouteView, currentSubsView) {
   try {
-    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
-    const storage_subs = storage[c.ALL_SUBS];
+    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.SENDER_THREADS]);
+    const senderThreads = storage[c.SENDER_THREADS];
+    const storageSubs = storage[c.ALL_SUBS];
 
     await updateCurrentSubCount();
     await loadSubscriptionRoute();
 
-    removeHandlers();
-    unregisterHandlers[unregisterHandlers.length] = sdk.Lists.registerThreadRowViewHandler(contentUtils.labelThreadRowViews(storage_subs));
+    unregisterHandlers.forEach(fn => fn());
+    unregisterHandlers.length = 0;
+    unregisterHandlers[unregisterHandlers.length] = sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
+      // add subscription label to qualifying threads
+      var contact = ThreadRowView.getContacts()[0];
+      if (storageSubs && storageSubs.hasOwnProperty(contact.emailAddress)) {
+        ThreadRowView.addLabel({
+          title: "Subscription",
+          foregroundColor: "white",
+          backgroundColor: "green"
+        });
+      }
+    });
 
     async function updateCurrentSubCount() {
       const currentSubs = await currentSubsView.getElement();
@@ -119,9 +125,8 @@ async function renderUI(customRouteView, currentSubsView) {
       });
 
       let last_synced = "";
-      const all_subs = [];
 
-      if (contentUtils.formatAllSubs(storage_subs, all_subs)) {
+      if (storageSubs && Object.keys(storageSubs).length > 0) {
         last_synced = "Last synced: " + new Date(storage[c.LAST_SYNCED]).toLocaleString();
       }
 
@@ -159,10 +164,10 @@ async function renderUI(customRouteView, currentSubsView) {
 
       parent.children[0].appendChild(btnContainer);
       parent.appendChild(ui.Instructions());
-      if (!storage_subs) return;
+      if (!storageSubs) return;
       parent.appendChild(ui.SubscriptionTable({
-        all_subs,
-        storage_subs,
+        senderThreads,
+        storageSubs,
         render: () => { renderUI(customRouteView, currentSubsView); },
         onTrashThreads: (sender) => {
           chrome.runtime.sendMessage({ message: c.TRASH_SENDER_THREADS, data: sender });

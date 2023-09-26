@@ -1,6 +1,7 @@
 import * as emailUtils from "./utils";
 import LoggerService from "../LoggerService";
 import EmailDao from "./EmailDao";
+import * as c from "../../constants";
 
 export default class EmailService {
   _shared;
@@ -24,7 +25,7 @@ export default class EmailService {
 
       const { threadsTotal } = await this.emailDao.getUserProfile();
       let maxThreads = threadsTotal,
-        // let maxThreads = 500,
+        // let maxThreads = 2500,
         maxResults = 500,
         numThreadsParsed = 0,
         pageToken = "",
@@ -44,15 +45,19 @@ export default class EmailService {
           const parsingOp = this.emailDao.getThreadData(thread.id)
             .then(async (threadData) => {
               const { internalDate, payload } = threadData.messages[0];
-              hasParsedThreadBefore = internalDate < storage.last_synced;
+              hasParsedThreadBefore = internalDate < storage[c.LAST_SYNCED];
               if (hasParsedThreadBefore) return;
-              const unsubLink = await emailUtils.getUnsubLink(payload);
-              if (!unsubLink) return;
               const { name, email } = emailUtils.getSender(payload.headers);
-              if (!storage.all_subs.hasOwnProperty(email)) {
-                storage.all_subs[email] = [name, unsubLink, true, [threadData.id]];
+
+              if (!storage[c.SENDER_THREADS].hasOwnProperty(email)) {
+                storage[c.SENDER_THREADS][email] = [threadData.id];
               } else {
-                storage.all_subs[email][3].push(threadData.id);
+                storage[c.SENDER_THREADS][email].push(threadData.id);
+              }
+
+              const unsubLink = await emailUtils.getUnsubLink(payload);
+              if (unsubLink != null && !storage[c.ALL_SUBS].hasOwnProperty(email)) {
+                storage[c.ALL_SUBS][email] = { name, unsubLink };
               }
             });
 
@@ -74,7 +79,7 @@ export default class EmailService {
   async trashAllSenderThreads(sender) {
     try {
       const storage = await emailUtils.getStoredThreads();
-      const threadIds = storage.all_subs[sender][3];
+      const threadIds = storage[c.SENDER_THREADS][sender];
       const trashOperations = threadIds.map(threadId => this.emailDao.trashThread(threadId));
       return Promise.all(trashOperations);
     } catch (e) {

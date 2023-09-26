@@ -36,7 +36,7 @@ export function axiosWithRetry(retryCount = 0, startDelaySeconds = 0) {
     // If unauthorized, send another request for a refresh token
     logger.shared.log({
       data: e,
-      message: `${counter} times, Response Error: `,
+      message: `${counter} times at ${new Date().toLocaleString()}, Response Error: `,
       type: "error"
     });
     switch (e.response?.status) {

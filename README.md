@@ -5,7 +5,7 @@
 InboxCleaner
 </h1>
 
-> A v3 manifest-based Chrome extension that parses a user's Gmail inbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
+> A v3 manifest-based Chrome extension that parses a user's Gmail mailbox and generates a list of email subscriptions with their associated hyperlinks. Its purpose is to enable people to better manage their cluttered inboxes, which are often overrun by company newsletters that they aren't interested in.
 
 - [Demo](#demo)
 - [Technologies](#technologies)
@@ -24,12 +24,14 @@ InboxCleaner
 
 ## Features
 
-As of 9/20/2023, InboxCleaner supports the following features:
+As of 9/26/2023, InboxCleaner supports the following features:
 
-- `Sync Now` is a button that will begin gathering the subscribed emails from your inbox.
-- `Reset` is the clickable 'instructions' paragraph that will empty the browser storage of all email data.
-- `Unsubscribe` is the clickable text that navigates you to the url where you can submit the unsubscription form.
-- Clicking the sender/email address will automatically search for all their messages, allowing you to view them individually.
+- `Sync Now`: click this button to start parsing your mailbox for all email subscriptions (restricted to most recent 2500 emails due to quota limits).
+- `Reset`: click this button to empty the browser's cached email subscriptions.
+- `Unsubscribe`: click this to navigate to the url where you can submit the unsubscription form.
+- Click the sender email address to search and view all threads that they've sent.
+- Use the checkboxes and/or the trash icon to remove individual subscriptions.
+- `Trash X threads`: click this button to delete all threads from this sender.
 
 ## Other
 

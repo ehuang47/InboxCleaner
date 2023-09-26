@@ -45,29 +45,38 @@ export function getSender(headers) {
   //   message: "getSender",
   //   type: "info"
   // });
-  for (var i in headers) {
-    let header = headers[i];
-    if (header.name === "From") {
-      let data = header.value.split(" <");
+  for (const header of headers) {
+    const { name, value } = header;
+    if (/from/i.test(name)) {
+      const data = value.split(" <");
+      // some headers solely have an email value, so splitting returns array of size 1
       // logger.shared.log({
-      //   data: {header, data},
+      //   data: {name, value, data},
       //   message: "getSender from",
       //   type: "info"
       // });
-      // some headers solely have an email value, so splitting returns array of size 1
-      return data[1] != null
-        ? { name: data[0], email: data[1].slice(0, -1) }
-        : { name: "", email: data[0] };
+      if (data.length === 1) {
+        return { name: "", email: data[0].slice(1, -1) };
+      } else {
+        return { name: data[0], email: data[1].slice(0, -1) };
+      }
     }
   }
+  logger.shared.log({
+    data: headers,
+    message: "getSender failed",
+    type: "error"
+  });
+  throw new Error("Issue finding thread sender");
 }
 
 export async function getStoredThreads() {
-  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.START]);
+  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.START, c.SENDER_THREADS]);
 
-  storage.all_subs = storage.all_subs ?? {};
-  storage.last_synced = storage.last_synced ?? null;
-  storage.start = storage.start ?? null;
+  storage[c.ALL_SUBS] = storage.all_subs ?? {};
+  storage[c.LAST_SYNCED] = storage.last_synced ?? null;
+  storage[c.START] = storage.start ?? null;
+  storage[c.SENDER_THREADS] = storage[c.SENDER_THREADS] ?? {};
   return storage;
 }
 
