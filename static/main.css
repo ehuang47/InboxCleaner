@@ -1,5 +1,4 @@
 :root {
-  --background-color: #f9fcfa;
   --secondary-color: #edeff1;
   --shadow-color: #949597;
   --hover-color: #f2f2f2;
@@ -35,7 +34,8 @@
 .ic-btn {
   border: 0;
   border-radius: 4rem;
-  background-color: var(--background-color);
+  background-color: transparent;
+  opacity: 1;
   padding: 0.5rem 1rem;
 }
 

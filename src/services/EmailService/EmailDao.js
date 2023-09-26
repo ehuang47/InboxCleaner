@@ -29,7 +29,7 @@ export default class EmailDao {
   async getThreadList(pageToken, maxResults) {
     return this.logger.forRequests({
       callback: async () => {
-        const axios = axiosWithRetry(5);
+        const axios = axiosWithRetry(3);
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads?`;
         const res = await axios.get(url, {
           params: { pageToken, maxResults }
@@ -45,7 +45,7 @@ export default class EmailDao {
   async getThreadData(threadId) {
     return this.logger.forRequests({
       callback: async () => {
-        const axios = axiosWithRetry(5);
+        const axios = axiosWithRetry(3, 30);
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}`;
         const res = await axios.get(url);
         return res.data;
@@ -59,7 +59,7 @@ export default class EmailDao {
   async trashThread(threadId) {
     return this.logger.forRequests({
       callback: async () => {
-        const axios = axiosWithRetry(5);
+        const axios = axiosWithRetry(3);
         const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/trash`;
         const res = await axios.post(url);
         return res.data;

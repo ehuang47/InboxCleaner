@@ -6,7 +6,7 @@ import logger from "./LoggerService";
 baseURL, timeout, params, headers, data,
 xsrfCookieName, xsrfHeaderName, cancelToken, withCredentials
 */
-export function axiosWithRetry(retryCount = 0) {
+export function axiosWithRetry(retryCount = 0, startDelaySeconds = 0) {
   let counter = 0;
   const ax = axios.create({
     timeout: 3000,
@@ -42,13 +42,14 @@ export function axiosWithRetry(retryCount = 0) {
     switch (e.response?.status) {
       case 401:
         break;
-      case 403: // https://stackoverflow.com/questions/56074531/how-to-retry-5xx-requests-using-axios
+      case 403: // forbidden, user rate limit exceeded, etc.
+      case 429: // too many requests
         if (counter < retryCount) {
           counter++;
           return new Promise(resolve => {
             setTimeout(() => {
               resolve(ax(e.config));
-            }, ((2 ** (counter + 2)) * 1000));
+            }, ((startDelaySeconds + (2 ** counter)) * 1000));
           });
         }
         break;
