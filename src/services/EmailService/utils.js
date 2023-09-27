@@ -80,18 +80,29 @@ export function getSender(headers) {
   throw new Error("Issue finding thread sender");
 }
 
-export async function getStoredThreads(email) {
-  const storage = await chrome.storage.local.get([email]);
-  if (storage.hasOwnProperty(email)) {
-    return storage[email];
-  }
+export async function getStoredThreads() {
+  const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.START]);
 
-  return {
-    [c.ALL_SUBS]: {},
-    [c.LAST_SYNCED]: null,
-    [c.IS_SYNCING]: false,
-    [c.IS_TRASHING]: false,
-  };
+  storage[c.ALL_SUBS] = storage.all_subs ?? {};
+  storage[c.LAST_SYNCED] = storage.last_synced ?? null;
+  storage[c.START] = storage.start ?? null;
+  return storage;
+}
+
+export async function updateStoredThreads(storage) {
+  logger.shared.log({
+    data: storage.all_subs,
+    message: "updating storage with new subscriber list",
+  });
+  chrome.storage.local.set({
+    ...storage,
+    [c.LAST_SYNCED]: new Date().getTime()
+  });
+  let elapsed = new Date().getTime() - storage.start;
+  var mins = elapsed / 60000;
+  logger.shared.log({
+    message: mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec",
+  });
 }
 
 export async function getUnsubLink(threadDataPayload) {

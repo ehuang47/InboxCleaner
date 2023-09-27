@@ -16,9 +16,11 @@ let loadingMessage;
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   (async () => {
     loadingMessage?.destroy();
+    let msg;
     switch (request.message) {
       case c.UPDATED_SUBSCRIBERS: {
-        sdk.ButterBar.showMessage({
+        await chrome.storage.local.set({ [c.IS_SYNCING]: false });
+        msg = sdk.ButterBar.showMessage({
           text: "Subscriptions successfully updated.",
           time: 5000
         });
@@ -26,24 +28,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
       case c.UPDATE_PROGRESS: {
-        sdk.ButterBar.showMessage({
+        msg = sdk.ButterBar.showMessage({
           text: request.data,
           time: 60000
         }); // no need to set a timer, it'll be updated soon
         break;
       }
       case c.TRASH_SENDER_THREADS: {
-        sdk.ButterBar.showMessage({
+        await chrome.storage.local.set({ [c.IS_TRASHING]: false });
+        msg = sdk.ButterBar.showMessage({
           text: "Threads moved to Trash.",
           time: 5000
         });
+        setTimeout(() => { msg.destroy(); }, 3000);
         break;
       }
       case c.ERROR: {
-        sdk.ButterBar.showError({
+        await chrome.storage.local.set({ [c.IS_TRASHING]: false, [c.IS_SYNCING]: false });
+        msg = sdk.ButterBar.showError({
           text: "There was a problem. Please try again later.",
           time: 5000
         });
+        setTimeout(() => { msg.destroy(); }, 3000);
         break;
       }
       default:
@@ -89,13 +95,7 @@ function initUI() {
 
 async function renderUI(customRouteView, currentSubsView) {
   try {
-    const res = await chrome.runtime.sendMessage({ message: c.GET_USER_SUBS });
-    logger.shared.log({
-      data: res,
-      message: `received user subs from service worker`,
-      type: "info"
-    });
-    const { userEmail, storage } = res;
+    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const storageSubs = storage[c.ALL_SUBS];
 
     await updateCurrentSubCount();
@@ -144,11 +144,11 @@ async function renderUI(customRouteView, currentSubsView) {
         onClick: async () => {
           const isProcessing = await checkProcessing({
             key: c.IS_SYNCING,
-            warningMessage: "You are currently syncing threads in your mailbox.",
-            userEmail
+            warningMessage: "You are currently syncing threads in your mailbox."
           });
           if (isProcessing) return;
 
+          await chrome.storage.local.set({ [c.IS_SYNCING]: true });
           chrome.runtime.sendMessage({ message: c.SYNC });
           loadingMessage = sdk.ButterBar.showLoading({
             text: "Syncing all emails..."
@@ -176,11 +176,11 @@ async function renderUI(customRouteView, currentSubsView) {
         onTrashThreads: async (sender) => {
           const isProcessing = await checkProcessing({
             key: c.IS_TRASHING,
-            warningMessage: "You are currently moving threads to the trash.",
-            userEmail
+            warningMessage: "You are currently moving threads to the trash."
           });
           if (isProcessing) return;
 
+          await chrome.storage.local.set({ [c.IS_TRASHING]: true });
           chrome.runtime.sendMessage({ message: c.TRASH_SENDER_THREADS, data: sender });
           loadingMessage = sdk.ButterBar.showLoading({
             text: "Moving threads to Trash..."
@@ -194,9 +194,7 @@ async function renderUI(customRouteView, currentSubsView) {
 }
 
 async function checkProcessing({ key, warningMessage }) {
-  const { storage } = await chrome.runtime.sendMessage({ message: c.GET_USER_SUBS });
-  const { [key]: isBusy } = storage;
-
+  const { [key]: isBusy } = await chrome.storage.local.get([key]);
   if (isBusy) {
     const div = document.createElement("div");
     div.innerText = warningMessage;
