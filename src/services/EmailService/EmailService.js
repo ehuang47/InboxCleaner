@@ -25,8 +25,7 @@ export default class EmailService {
 
       const { threadsTotal } = await this.emailDao.getUserProfile();
       let maxThreads = threadsTotal,
-        // let maxThreads = 2500,
-        maxResults = 500,
+        maxResults = 250,
         numThreadsParsed = 0,
         pageToken = "",
         threadParsingOperations = [];
@@ -47,23 +46,29 @@ export default class EmailService {
               const { internalDate, payload } = threadData.messages[0];
               hasParsedThreadBefore = internalDate < storage[c.LAST_SYNCED];
               if (hasParsedThreadBefore) return;
+
               const { name, email } = emailUtils.getSender(payload.headers);
 
-              if (!storage[c.SENDER_THREADS].hasOwnProperty(email)) {
-                storage[c.SENDER_THREADS][email] = [threadData.id];
+              if (!storage[c.ALL_SUBS].hasOwnProperty(email)) {
+                storage[c.ALL_SUBS][email] = { name, threadIdList: [threadData.id] };
               } else {
-                storage[c.SENDER_THREADS][email].push(threadData.id);
+                const subData = storage[c.ALL_SUBS][email];
+                subData.threadIdList.push(threadData.id);
+                storage[c.ALL_SUBS][email] = subData;
               }
 
+              const subData = storage[c.ALL_SUBS][email];
+              if (subData.hasOwnProperty("unsubLink")) return;
               const unsubLink = await emailUtils.getUnsubLink(payload);
-              if (unsubLink != null && !storage[c.ALL_SUBS].hasOwnProperty(email)) {
-                storage[c.ALL_SUBS][email] = { name, unsubLink };
+              if (unsubLink) {
+                subData.unsubLink = unsubLink;
+                storage[c.ALL_SUBS][email] = subData;
               }
             });
 
           threadParsingOperations.push(parsingOp);
         }
-        await Promise.all(threadParsingOperations); // batch 500 requests, finish before sending the next 500 requests
+        await Promise.all(threadParsingOperations);
         threadParsingOperations = [];
       }
       await emailUtils.updateStoredThreads(storage);
@@ -78,18 +83,28 @@ export default class EmailService {
 
   async trashAllSenderThreads(sender) {
     try {
+      let start = new Date().getTime();
+
       const storage = await emailUtils.getStoredThreads();
-      const threadIds = storage[c.SENDER_THREADS][sender];
+      const threadIdList = storage[c.ALL_SUBS][sender].threadIdList;
       let trashOps = [];
-      for (let i = 0; i < threadIds.length; i += 10) { // batch 10 requests per time
-        for (let j = i; (j < i + 10) && (j < threadIds.length); j++) {
-          const threadId = threadIds[j];
+      for (let i = 0; i < threadIdList.length; i += 5) { // batch 10 requests per time
+        for (let j = i; (j < i + 5) && (j < threadIdList.length); j++) {
+          const threadId = threadIdList[j];
           trashOps.push(this.emailDao.trashThread(threadId));
         }
         await Promise.all(trashOps);
+        this.logger.log({
+          message: `trashed ${trashOps.length} threads`,
+        });
         trashOps = [];
       }
-      return Promise.all(trashOperations);
+
+      let elapsed = new Date().getTime() - start;
+      var mins = elapsed / 60000;
+      this.logger.log({
+        message: mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec",
+      });
     } catch (e) {
       this.logger.log({
         message: e,

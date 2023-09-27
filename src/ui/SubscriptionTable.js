@@ -1,7 +1,7 @@
 import * as c from "../constants";
 import { MyButton } from "./common";
 
-export default function SubscriptionTable({ senderThreads, storageSubs, render, onTrashThreads }) {
+export default function SubscriptionTable({ storageSubs, render, onTrashThreads }) {
   const selectedSubs = new Set();
 
   const container = document.createElement("div");
@@ -119,7 +119,7 @@ export default function SubscriptionTable({ senderThreads, storageSubs, render, 
           </tr>
         </thead>
         <tbody>
-          ${Object.entries(storageSubs).map(([email, { name, unsubLink }]) => `<tr id=${email}>
+          ${Object.entries(storageSubs).map(([email, { name, unsubLink, threadIdList }]) => `<tr id=${email}>
             <td>
               <div class="ic-icon" name="subs-checkbox">
                 <input type="checkbox" id="${email}-checkbox" name="subs-checkbox"/>
@@ -128,8 +128,8 @@ export default function SubscriptionTable({ senderThreads, storageSubs, render, 
             </td>
             <td>${name}</td>
             <td class="subscription-action" name="address">${email}</td>
-            <td><a href=${unsubLink}>Unsubscribe</a></td>
-            <td class="subscription-action" name="move-trash">Trash ${senderThreads[email].length} threads</td>
+            <td>${unsubLink ? `<a href=${unsubLink}>Unsubscribe</a>` : ""}</td>
+            <td class="subscription-action" name="move-trash">Trash ${threadIdList.length} threads</td>
             <td>
               <div class="ic-icon" name="delete-subscription">
               ${trashIcon({ name: "delete-subscription" })}

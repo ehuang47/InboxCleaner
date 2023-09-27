@@ -11,7 +11,6 @@ const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
 const customRouteIds = {
   SUBSCRIPTIONS: "subscriptions"
 };
-let unregisterHandlers = [];
 let loadingMessage;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -84,26 +83,13 @@ function initUI() {
 
 async function renderUI(customRouteView, currentSubsView) {
   try {
-    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED, c.SENDER_THREADS]);
-    const senderThreads = storage[c.SENDER_THREADS];
+    const storage = await chrome.storage.local.get([c.ALL_SUBS, c.LAST_SYNCED]);
     const storageSubs = storage[c.ALL_SUBS];
 
     await updateCurrentSubCount();
     await loadSubscriptionRoute();
 
-    unregisterHandlers.forEach(fn => fn());
-    unregisterHandlers = [];
-    unregisterHandlers[unregisterHandlers.length] = sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
-      // add subscription label to qualifying threads
-      var contact = ThreadRowView.getContacts()[0];
-      if (storageSubs && storageSubs.hasOwnProperty(contact.emailAddress)) {
-        ThreadRowView.addLabel({
-          title: "Subscription",
-          foregroundColor: "white",
-          backgroundColor: "green"
-        });
-      }
-    });
+
 
     async function updateCurrentSubCount() {
       const currentSubs = await currentSubsView.getElement();
@@ -166,7 +152,6 @@ async function renderUI(customRouteView, currentSubsView) {
       parent.appendChild(ui.Instructions());
       if (!storageSubs) return;
       parent.appendChild(ui.SubscriptionTable({
-        senderThreads,
         storageSubs,
         render: () => { renderUI(customRouteView, currentSubsView); },
         onTrashThreads: (sender) => {

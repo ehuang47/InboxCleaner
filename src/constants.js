@@ -1,8 +1,7 @@
 // for storage
 export const ALL_SUBS = "all_subs",
   LAST_SYNCED = "last_synced",
-  START = "start",
-  SENDER_THREADS = "sender_threads";
+  START = "start";
 
 // message types
 export const OPEN_NEW_TAB = "open_new_tab",

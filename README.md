@@ -27,12 +27,14 @@ InboxCleaner
 
 As of 9/26/2023, InboxCleaner supports the following features:
 
-- `Sync Now`: click this button to start parsing your mailbox for all email subscriptions (restricted to most recent 2500 emails due to quota limits, only tested with 3300).
+- `Sync Now`: click this button to start parsing your mailbox for all email subscriptions since the last time you synced. (only tested with 3300 in my inbox, 2014 of which were subscriptions).
+  - Note: It queries your Gmail mailbox for threads that contain "subscribe". Venmo is one example where its emails are not subscriptions, but match the query because it contains the word query.
 - `Reset`: click this button to empty the browser's cached email subscriptions.
-- `Unsubscribe`: click this to navigate to the url where you can submit the unsubscription form.
-- Click the sender email address to search and view all threads that they've sent.
+- `Unsubscribe`: click this to navigate to the url where you can submit the unsubscription form. If it does not appear, click the address and manually find the link to unsubscribe.
+- Click the sender email address to search and view all threads that they've sent. Tends to also display emails that were not subscriptions.
 - Use the checkboxes and/or the trash icon to remove individual subscriptions.
-- `Trash X threads`: click this button to delete all threads from this sender (only tested with 141 threads, where requests take longer and up to 15 seconds to complete).
+- `Trash X threads`: click this button to delete all threads from this sender.
+  - Note: I only tested by deleting 232 threads with 1 click, and it's possible that it takes 2-3 seconds to each time. I don't know what happens if you click this and other rows multiple times.
 
 ## Future Mailbox Management Tips
 
