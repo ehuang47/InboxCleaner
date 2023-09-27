@@ -14,6 +14,10 @@ const customRouteIds = {
 let loadingMessage;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.message === "parse-dom") {
+    console.log("content script received parse-dom");
+    return;
+  }
   (async () => {
     loadingMessage?.destroy();
     let msg;

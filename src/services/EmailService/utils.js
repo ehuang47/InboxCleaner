@@ -3,18 +3,18 @@ import logger from "../LoggerService";
 // https://exceptionshub.com/gmail-api-parse-message-content-base64-decoding-with-javascript.html
 // https://stackoverflow.com/questions/24811008/gmail-api-decoding-messages-in-javascript
 // recursion to traverse the messageparts and acquire the decoded text/html
-export function parseMessagePart(part) {
+export function parseMessagePart(payload) {
   // logger.shared.log({
-  //   message: part.mimeType + "\n" + part.body + "\n"+ part.parts,
+  //   message: payload.mimeType + "\n" + payload.body + "\n"+ payload.parts,
   //   type: "info"
   // });
-  if (part == null || part.mimeType === "text/plain") return "";
-  if (part.mimeType === "text/html")
-    return atob(part.body.data.replace(/-/g, "+").replace(/_/g, "/"));
+  if (payload == null || payload.mimeType === "text/plain") return "";
+  if (payload.mimeType === "text/html")
+    return atob(payload.body.data.replace(/-/g, "+").replace(/_/g, "/"));
 
-  if (part.parts != null) {
-    for (i in part.parts) {
-      var result = parseMessagePart(part.parts[i]);
+  if (payload.parts != null) {
+    for (const part of payload.parts) {
+      var result = parseMessagePart(part);
       if (result != "") return result; // found text/html, so return decoded version
     }
   }
@@ -23,19 +23,29 @@ export function parseMessagePart(part) {
 
 // some email headers contain an unsub link
 export function getHeaderUnsubLink(headers) {
-  for (var i in headers) {
-    let header = headers[i];
-    if (header.name === "List-Unsubscribe") {
-      // logger.shared.log({
-      //   message: `header.value ${header.value}`,
-      //   type: "info"
-      // });
-      // some headers are strange in that its a pair <unsub link, mail link> or it lacks the url so its just <mail-link>
-      let http_or_mail = header.value.split(",")[0].slice(1, -1);
-      return http_or_mail.match(/^https?:\/\/[^t][^r][^k]/) ? http_or_mail : null;
+  logger.shared.log({
+    data: headers,
+    message: "getHeaderUnsubLink",
+    type: "info"
+  });
+  for (const header of headers) {
+    const { name, value } = header;
+    if (/list-unsubscribe/i.test(name)) {
+      /* edge cases for the value
+
+      sometimes its just the unsub link, like:
+      <https://click.e.usa.experian.com...>
+
+      sometimes, it is just the mail link, so when you click the header unsubscribe, it makes a popup. the link looks like:
+      <mailto:unsubscribe@questline.com...>
+
+      or it can be a pair: <unsub-link, mailto-link>
+      */
+      let http_or_mail = value.split(",")[0].slice(1, -1);
+
+      if (/^https?:\/\//.test(http_or_mail)) return http_or_mail;
     }
   }
-  return null;
 }
 
 // look in email headers to find the sender name and email
@@ -99,11 +109,16 @@ export async function getUnsubLink(threadDataPayload) {
   // message mimeType is either multiparty or text/html
   let href = getHeaderUnsubLink(threadDataPayload.headers);
   if (!href) { // check thread's email body
-    const { unsubLink } = await chrome.runtime.sendMessage({
+    const res = await chrome.runtime.sendMessage({
       message: "parse-dom",
-      data: threadDataPayload
+      data: parseMessagePart(threadDataPayload)
     });
-    href = unsubLink;
+    logger.shared.log({
+      data: { threadDataPayload, res },
+      message: "parsed dom for unsub link",
+      type: res.unsubLink ? "success" : "error"
+    });
+    href = res.unsubLink;
   }
   return href;
 }
