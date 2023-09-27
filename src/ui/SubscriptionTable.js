@@ -12,11 +12,11 @@ export default function SubscriptionTable({ storageSubs, render, onTrashThreads 
     onClick: async () => {
       if (selectedSubs.size === 0) return;
 
-      const storage = await chrome.storage.local.get([c.ALL_SUBS]);
+      const { userEmail, storage } = await chrome.runtime.sendMessage({ message: c.GET_USER_SUBS });
       for (const sender of selectedSubs) {
         delete storage[c.ALL_SUBS][sender];
       }
-      await chrome.storage.local.set(storage);
+      await chrome.storage.local.set({ [userEmail]: storage });
       render();
     }
   }));
@@ -51,11 +51,11 @@ export default function SubscriptionTable({ storageSubs, render, onTrashThreads 
         break;
       }
       case "delete-subscription": {
-        const storage = await chrome.storage.local.get([c.ALL_SUBS]);
+        const { userEmail, storage } = await chrome.runtime.sendMessage({ message: c.GET_USER_SUBS });
         const parentRow = e.target.closest("tr");
         const sender = parentRow.id;
         delete storage[c.ALL_SUBS][sender];
-        await chrome.storage.local.set(storage);
+        await chrome.storage.local.set({ [userEmail]: storage });
         render();
         break;
       }

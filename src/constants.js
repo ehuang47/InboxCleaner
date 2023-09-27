@@ -12,4 +12,5 @@ export const SYNC = "sync",
   RESET = "reset",
   TRASH_SENDER_THREADS = "trash_sender_threads",
   ERROR = "error",
-  UPDATE_PROGRESS = "update_progress";
+  UPDATE_PROGRESS = "update_progress",
+  GET_USER_SUBS = "get_user_subs";

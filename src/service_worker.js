@@ -2,6 +2,7 @@ import "@inboxsdk/core/background.js";
 import EmailService from "./services/EmailService";
 import * as c from "./constants";
 import logger from "./services/LoggerService";
+import { getStoredThreads } from "./services/EmailService/utils";
 
 // when extension is installed, updated, or chrome is updated
 chrome.runtime.onInstalled.addListener((details) => {
@@ -40,57 +41,83 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     message: "received message",
     type: "info"
   });
-  (async () => {
-    let tab;
-    try {
-      const queriedTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-      tab = queriedTabs[0];
-      switch (message.message) {
-        case c.SYNC: {
-          const { last_synced } = await chrome.storage.local.get([c.LAST_SYNCED]);
-          logger.shared.log({
-            message: "Sync in progress. Last synced at: " + last_synced,
-            type: "info"
-          });
 
-          const start = new Date().getTime();
-          await chrome.storage.local.set({ start });
+  handleMessages(message, sender, sendResponse);
 
-          await EmailService.shared.syncAllThreads((threadCount) => {
-            chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Synced ${threadCount} threads...` });
-          });
-          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
-          break;
-        }
-        case c.RESET: {
-          // mostly for testing, if you need to clear out subscriber list
-          await chrome.storage.local.clear();
-          chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
-          break;
-        }
-        case c.TRASH_SENDER_THREADS: {
-          await EmailService.shared.trashAllSenderThreads(message.data, (threadCount, total) => {
-            chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Moved ${threadCount}/${total} threads to Trash...` });
-          });
-          chrome.tabs.sendMessage(tab.id, { message: c.TRASH_SENDER_THREADS });
-          break;
-        }
-        default:
-          logger.shared.log({
-            data: message.message,
-            message: "message not handled",
-            type: "info"
-          });
-      }
-      sendResponse();
-    } catch (e) {
-      logger.shared.log({
-        data: e,
-        message: "error runtime.onMessage.listener",
-        type: "error"
-      });
-      chrome.tabs.sendMessage(tab.id, { message: c.ERROR });
-    }
-  })();
+
   return true;
 });
+
+async function getUserSubs(message, sender, sendResponse) {
+  if (message.message === c.GET_USER_SUBS) {
+    const { emailAddress } = await EmailService.shared.getUserProfile();
+    const storage = await getStoredThreads(emailAddress);
+
+    logger.shared.log({
+      data: { userEmail: emailAddress, storage },
+      message: "get_user_subs",
+      type: "info"
+    });
+    sendResponse({ userEmail: emailAddress, storage });
+  }
+}
+
+async function handleMessages(message, sender, sendResponse) {
+  let tab;
+  try {
+    const queriedTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    tab = queriedTabs[0];
+    switch (message.message) {
+      case c.GET_USER_SUBS: {
+        const { emailAddress } = await EmailService.shared.getUserProfile();
+        const storage = await getStoredThreads(emailAddress);
+
+        logger.shared.log({
+          data: { userEmail: emailAddress, storage },
+          message: "get_user_subs",
+          type: "info"
+        });
+        sendResponse({ userEmail: emailAddress, storage });
+        return true;
+      }
+      case c.SYNC: {
+        await EmailService.shared.syncAllThreads({
+          sendProgress: (threadCount) => {
+            chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Synced ${threadCount} threads...` });
+          }
+        });
+        chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+        break;
+      }
+      case c.RESET: {
+        await EmailService.shared.resetAccountSubscriptions();
+        chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+        break;
+      }
+      case c.TRASH_SENDER_THREADS: {
+        await EmailService.shared.trashAllSenderThreads({
+          sender: message.data,
+          sendProgress: (threadCount, total) => {
+            chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Moved ${threadCount}/${total} threads to Trash...` });
+          }
+        });
+        chrome.tabs.sendMessage(tab.id, { message: c.TRASH_SENDER_THREADS });
+        break;
+      }
+      default:
+        logger.shared.log({
+          data: message.message,
+          message: "message not handled",
+          type: "info"
+        });
+    }
+    sendResponse({});
+  } catch (e) {
+    logger.shared.log({
+      data: e,
+      message: "error runtime.onMessage.listener",
+      type: "error"
+    });
+    chrome.tabs.sendMessage(tab.id, { message: c.ERROR });
+  }
+}

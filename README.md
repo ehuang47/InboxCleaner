@@ -29,6 +29,7 @@ As of 9/26/2023, InboxCleaner supports the following features:
 
 - `Sync Now`: click this button to start parsing your mailbox for all email subscriptions since the last time you synced. (only tested with 3300 in my inbox, 2014 of which were subscriptions).
   - Note: It queries your Gmail mailbox for threads that contain "subscribe". Venmo is one example where its emails are not subscriptions, but match the query because it contains the word query.
+  - You also need to revoke the cached identity token at chrome://identity-internals/ if you want to switch between google accounts and clean their inbox.
 - `Reset`: click this button to empty the browser's cached email subscriptions.
 - `Unsubscribe`: click this to navigate to the url where you can submit the unsubscription form. If it does not appear, click the address and manually find the link to unsubscribe.
 - Click the sender email address to search and view all threads that they've sent. Tends to also display emails that were not subscriptions.

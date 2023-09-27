@@ -3,7 +3,7 @@ export function Instructions() {
   div.innerHTML = `
   <details>
     <summary>How do I use this?</summary>
-    <p>Press "Sync Now" to find all email subscriptions since the last time synced. <br> If you want to scan everything, please reset and sync again.</p>
+    <p>Press "Sync Now" to find all email subscriptions since the last time synced. <br> If you want to scan everything, please reset and sync again. If you'd like to sync with other gmail account mailboxes, revoke the cached token at chrome://identity-internals/ and grant permissions to said account.</p>
     <h4>What can this extension do?</h4>
     <ol>
     <li id="li-0">Click the sender address if you'd like to search and filter all their threads. Note that some resulting emails may not be subscriptions, but still come from that sender address.</li>
