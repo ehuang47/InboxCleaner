@@ -2,7 +2,6 @@ import * as InboxSDK from '@inboxsdk/core';
 import * as c from "./constants.js";
 import ui from "./ui";
 import logger from './services/LoggerService.js';
-import { async } from 'regenerator-runtime';
 
 const sdkViews = {
   customRoute: null,
@@ -20,7 +19,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     let msg;
     switch (request.message) {
       case c.UPDATED_SUBSCRIBERS: {
-        await chrome.storage.local.set({ isSyncing: false });
+        await chrome.storage.local.set({ [c.IS_SYNCING]: false });
         msg = sdk.ButterBar.showMessage({
           text: "Subscriptions successfully updated.",
           time: 5000
@@ -36,7 +35,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
       case c.TRASH_SENDER_THREADS: {
-        await chrome.storage.local.set({ isTrashing: false });
+        await chrome.storage.local.set({ [c.IS_TRASHING]: false });
         msg = sdk.ButterBar.showMessage({
           text: "Threads moved to Trash.",
           time: 5000
@@ -45,7 +44,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
       case c.ERROR: {
-        await chrome.storage.local.set({ isTrashing: false, isSyncing: false });
+        await chrome.storage.local.set({ [c.IS_TRASHING]: false, [c.IS_SYNCING]: false });
         msg = sdk.ButterBar.showError({
           text: "There was a problem. Please try again later.",
           time: 5000
@@ -144,12 +143,12 @@ async function renderUI(customRouteView, currentSubsView) {
         classes: ["ic-btn"],
         onClick: async () => {
           const isProcessing = await checkProcessing({
-            key: "isSyncing",
+            key: c.IS_SYNCING,
             warningMessage: "You are currently syncing threads in your mailbox."
           });
           if (isProcessing) return;
 
-          await chrome.storage.local.set({ isSyncing: true });
+          await chrome.storage.local.set({ [c.IS_SYNCING]: true });
           chrome.runtime.sendMessage({ message: c.SYNC });
           loadingMessage = sdk.ButterBar.showLoading({
             text: "Syncing all emails..."
@@ -176,12 +175,12 @@ async function renderUI(customRouteView, currentSubsView) {
         render: () => { renderUI(customRouteView, currentSubsView); },
         onTrashThreads: async (sender) => {
           const isProcessing = await checkProcessing({
-            key: "isTrashing",
+            key: c.IS_TRASHING,
             warningMessage: "You are currently moving threads to the trash."
           });
           if (isProcessing) return;
 
-          await chrome.storage.local.set({ isTrashing: true });
+          await chrome.storage.local.set({ [c.IS_TRASHING]: true });
           chrome.runtime.sendMessage({ message: c.TRASH_SENDER_THREADS, data: sender });
           loadingMessage = sdk.ButterBar.showLoading({
             text: "Moving threads to Trash..."

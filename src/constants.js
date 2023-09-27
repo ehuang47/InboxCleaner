@@ -1,7 +1,10 @@
 // for storage
 export const ALL_SUBS = "all_subs",
   LAST_SYNCED = "last_synced",
-  START = "start";
+  START = "start",
+  IS_SYNCING = "isSyncing",
+  IS_TRASHING = "isTrashing";
+
 
 // message types
 export const SYNC = "sync",
