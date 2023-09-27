@@ -43,10 +43,10 @@ Follow the instructions below to automatically filter out emails that have subsc
 1. In Gmail, click the icon in the right of the search bar, and type in the `unsubscribe` key word for Gmail to filter. Then click `Create filter`.
 ![Creating the filter](./assets/1-filter.png)
 
-2. You'll be asked to set some actions for when an email is received and matches your filter. I personally choose to archive it and set it as junk immediately. Click `Create filter` to finalize it.
+1. You'll be asked to set some actions for when an email is received and matches your filter. I personally choose to archive it and apply a custom label `Junk`. Click `Create filter` to finalize it.
 ![Setting filter actions](./assets/2-filter.png)
 
-3. Now, your actions will be applied to all future emails that match this filter. You can manage, edit, and delete this filter by going to the top right and clicking the Settings (gear icon), and following `See all settings > Filters and Blocked Addresses`.
+1. Now, your actions will be applied to all future emails that match this filter. You can manage, edit, and delete this filter by going to the top right and clicking the Settings (gear icon), and following `See all settings > Filters and Blocked Addresses`.
 ![Managing the filter](./assets/3-filter.png)
 
 ## Other

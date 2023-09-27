@@ -11,7 +11,7 @@ const sdk = await InboxSDK.load(2, "sdk_gmanager_284293dc99");
 const customRouteIds = {
   SUBSCRIPTIONS: "subscriptions"
 };
-const unregisterHandlers = [];
+let unregisterHandlers = [];
 let loadingMessage;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -92,7 +92,7 @@ async function renderUI(customRouteView, currentSubsView) {
     await loadSubscriptionRoute();
 
     unregisterHandlers.forEach(fn => fn());
-    unregisterHandlers.length = 0;
+    unregisterHandlers = [];
     unregisterHandlers[unregisterHandlers.length] = sdk.Lists.registerThreadRowViewHandler((ThreadRowView) => {
       // add subscription label to qualifying threads
       var contact = ThreadRowView.getContacts()[0];

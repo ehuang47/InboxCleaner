@@ -63,9 +63,9 @@ export default class EmailService {
 
           threadParsingOperations.push(parsingOp);
         }
+        await Promise.all(threadParsingOperations); // batch 500 requests, finish before sending the next 500 requests
+        threadParsingOperations = [];
       }
-
-      await Promise.all(threadParsingOperations); // finish processing all thread lists
       await emailUtils.updateStoredThreads(storage);
     } catch (e) {
       this.logger.log({
@@ -80,7 +80,15 @@ export default class EmailService {
     try {
       const storage = await emailUtils.getStoredThreads();
       const threadIds = storage[c.SENDER_THREADS][sender];
-      const trashOperations = threadIds.map(threadId => this.emailDao.trashThread(threadId));
+      let trashOps = [];
+      for (let i = 0; i < threadIds.length; i += 10) { // batch 10 requests per time
+        for (let j = i; (j < i + 10) && (j < threadIds.length); j++) {
+          const threadId = threadIds[j];
+          trashOps.push(this.emailDao.trashThread(threadId));
+        }
+        await Promise.all(trashOps);
+        trashOps = [];
+      }
       return Promise.all(trashOperations);
     } catch (e) {
       this.logger.log({

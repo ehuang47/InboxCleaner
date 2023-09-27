@@ -9,7 +9,7 @@ xsrfCookieName, xsrfHeaderName, cancelToken, withCredentials
 export function axiosWithRetry(retryCount = 0, startDelaySeconds = 0) {
   let counter = 0;
   const ax = axios.create({
-    timeout: 15000,
+    timeout: 3000,
     adapter: fetchAdapter
   });
 
