@@ -23,11 +23,11 @@ export function parseMessagePart(payload) {
 
 // some email headers contain an unsub link
 export function getHeaderUnsubLink(headers) {
-  logger.shared.log({
-    data: headers,
-    message: "getHeaderUnsubLink",
-    type: "info"
-  });
+  // logger.shared.log({
+  //   data: headers,
+  //   message: "getHeaderUnsubLink",
+  //   type: "info"
+  // });
   for (const header of headers) {
     const { name, value } = header;
     if (/list-unsubscribe/i.test(name)) {
@@ -113,11 +113,11 @@ export async function getUnsubLink(threadDataPayload) {
       message: "parse-dom",
       data: parseMessagePart(threadDataPayload)
     });
-    logger.shared.log({
-      data: { threadDataPayload, res },
-      message: "parsed dom for unsub link",
-      type: res.unsubLink ? "success" : "error"
-    });
+    // logger.shared.log({
+    //   data: { threadDataPayload, res },
+    //   message: "parsed dom for unsub link",
+    //   type: res.unsubLink ? "success" : "error"
+    // });
     href = res.unsubLink;
   }
   return href;

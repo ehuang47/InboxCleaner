@@ -18,14 +18,14 @@ export default class EmailService {
     this.emailDao = emailDao;
   }
 
-  async syncAllThreads() {
+  async syncAllThreads(sendProgress) {
     try {
       const storage = await emailUtils.getStoredThreads();
       let hasParsedThreadBefore = false;
 
       const { threadsTotal } = await this.emailDao.getUserProfile();
-      let maxThreads = 50,
-        maxResults = 50,
+      let maxThreads = 50, // 50 for testing
+        maxResults = 25, // 250, 25 for testing
         numThreadsParsed = 0,
         pageToken = "",
         threadParsingOperations = [];
@@ -34,11 +34,6 @@ export default class EmailService {
         const threadList = await this.emailDao.getThreadList(pageToken, maxResults);
         numThreadsParsed += threadList.threads.length;
         pageToken = threadList.nextPageToken;
-        this.logger.log({
-          data: threadList.threads,
-          message: `parsed ${numThreadsParsed} threads`,
-          type: "info"
-        });
         for (const thread of threadList.threads) {
           if (hasParsedThreadBefore) break;
           const parsingOp = this.emailDao.getThreadData(thread.id)
@@ -70,6 +65,12 @@ export default class EmailService {
         }
         await Promise.all(threadParsingOperations);
         threadParsingOperations = [];
+
+        this.logger.log({
+          data: threadList.threads,
+          message: `parsed ${numThreadsParsed} threads`,
+        });
+        sendProgress(numThreadsParsed,);
       }
       await emailUtils.updateStoredThreads(storage);
     } catch (e) {
@@ -81,7 +82,7 @@ export default class EmailService {
     }
   }
 
-  async trashAllSenderThreads(sender) {
+  async trashAllSenderThreads(sender, sendProgress) {
     try {
       let start = new Date().getTime();
 
@@ -94,10 +95,11 @@ export default class EmailService {
           trashOps.push(this.emailDao.trashThread(threadId));
         }
         await Promise.all(trashOps);
+        trashOps = [];
         this.logger.log({
           message: `trashed ${trashOps.length} threads`,
         });
-        trashOps = [];
+        sendProgress(i + 5, threadIdList.length);
       }
 
       let elapsed = new Date().getTime() - start;

@@ -56,7 +56,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const start = new Date().getTime();
           await chrome.storage.local.set({ start });
 
-          await EmailService.shared.syncAllThreads();
+          await EmailService.shared.syncAllThreads((threadCount) => {
+            chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Synced ${threadCount} threads...` });
+          });
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
           break;
         }
@@ -67,7 +69,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
         case c.TRASH_SENDER_THREADS: {
-          await EmailService.shared.trashAllSenderThreads(message.data);
+          await EmailService.shared.trashAllSenderThreads(message.data, (threadCount, total) => {
+            chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Moved ${threadCount}/${total} threads to Trash...` });
+          });
           chrome.tabs.sendMessage(tab.id, { message: c.TRASH_SENDER_THREADS });
           break;
         }
@@ -78,6 +82,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             type: "info"
           });
       }
+      sendResponse();
     } catch (e) {
       logger.shared.log({
         data: e,

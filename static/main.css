@@ -19,6 +19,10 @@
   gap: 1rem;
 }
 
+.ic-table tr:hover {
+  box-shadow: 0 0 4px var(--shadow-color);
+}
+
 .ic-table,
 .ic-table td,
 .ic-table th {
@@ -56,7 +60,7 @@
 
 .ic-table td.subscription-action:hover {
   cursor: pointer;
-  box-shadow: 0 0 4px var(--shadow-color);
+  background-color: var(--hover-color);
 }
 
 .ic-mb {

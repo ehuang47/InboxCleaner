@@ -4,9 +4,9 @@ export const ALL_SUBS = "all_subs",
   START = "start";
 
 // message types
-export const OPEN_NEW_TAB = "open_new_tab",
-  SYNC = "sync",
+export const SYNC = "sync",
   UPDATED_SUBSCRIBERS = "updated_subscribers",
   RESET = "reset",
   TRASH_SENDER_THREADS = "trash_sender_threads",
-  ERROR = "error";
+  ERROR = "error",
+  UPDATE_PROGRESS = "update_progress";

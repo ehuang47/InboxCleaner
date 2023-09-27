@@ -14,31 +14,39 @@ const customRouteIds = {
 let loadingMessage;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.message === "parse-dom") {
-    console.log("content script received parse-dom");
-    return;
-  }
   (async () => {
     loadingMessage?.destroy();
     let msg;
     switch (request.message) {
       case c.UPDATED_SUBSCRIBERS: {
         msg = sdk.ButterBar.showMessage({
-          text: "Subscriptions successfully updated."
+          text: "Subscriptions successfully updated.",
+          time: 5000
         });
         await renderUI(sdkViews.customRoute, sdkViews.currentSubs);
         break;
       }
+      case c.UPDATE_PROGRESS: {
+        msg = sdk.ButterBar.showMessage({
+          text: request.data,
+          time: 60000
+        }); // no need to set a timer, it'll be updated soon
+        break;
+      }
       case c.TRASH_SENDER_THREADS: {
         msg = sdk.ButterBar.showMessage({
-          text: "Threads moved to Trash."
+          text: "Threads moved to Trash.",
+          time: 5000
         });
+        setTimeout(() => { msg.destroy(); }, 3000);
         break;
       }
       case c.ERROR: {
         msg = sdk.ButterBar.showError({
-          text: "There was a problem. Please try again later."
+          text: "There was a problem. Please try again later.",
+          time: 5000
         });
+        setTimeout(() => { msg.destroy(); }, 3000);
         break;
       }
       default:
@@ -48,9 +56,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           type: "info"
         });
     }
-    setTimeout(() => {
-      msg.destroy();
-    }, 2000);
     sendResponse();
   })();
   return true;
