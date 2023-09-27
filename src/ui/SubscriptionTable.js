@@ -47,7 +47,7 @@ export default function SubscriptionTable({ storageSubs, render, onTrashThreads 
       case "move-trash": {
         const parentRow = e.target.closest("tr");
         const sender = parentRow.id;
-        onTrashThreads(sender);
+        await onTrashThreads(sender);
         break;
       }
       case "delete-subscription": {

@@ -97,7 +97,7 @@ export default class EmailService {
         await Promise.all(trashOps);
         trashOps = [];
         this.logger.log({
-          message: `trashed ${trashOps.length} threads`,
+          message: `trashed ${i + 5} threads`,
         });
         sendProgress(i + 5, threadIdList.length);
       }
