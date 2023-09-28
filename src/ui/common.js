@@ -3,7 +3,9 @@ export function Instructions() {
   div.innerHTML = `
   <details>
     <summary>How do I use this?</summary>
-    <p>Press "Sync Now" to find all email subscriptions since the last time synced. <br> If you want to scan everything, please reset and sync again.</p>
+    <p>Press "Sync Now" to find all email subscriptions since the last time synced. <br> If you want to scan everything, please reset and sync again. <br>
+    Please be patient, as it may take a while (ex. for ~3000 emails, it takes 1-2 minutes)
+    </p>
     <h4>What can this extension do?</h4>
     <ol>
     <li id="li-0">Click the sender address if you'd like to search and filter all their threads. Note that some resulting emails may not be subscriptions, but still come from that sender address.</li>

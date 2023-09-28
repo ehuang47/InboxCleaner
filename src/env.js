@@ -1,1 +1,1 @@
-export const LOGS_ENABLED = true;
+export const LOGS_ENABLED = false;

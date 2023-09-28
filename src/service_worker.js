@@ -3,29 +3,6 @@ import EmailService from "./services/EmailService";
 import * as c from "./constants";
 import logger from "./services/LoggerService";
 
-// when extension is installed, updated, or chrome is updated
-chrome.runtime.onInstalled.addListener((details) => {
-  // gets previous extension version, reason "oninstalled" activated, and maybe ID
-  logger.shared.log({
-    message: "Triggered onInstalled due to: " + details.reason,
-    type: "info"
-  });
-
-  // setting rules for page actions & taking action when accessing a page that meets all criteria
-  chrome.declarativeContent.onPageChanged.removeRules(undefined, function () {
-    chrome.declarativeContent.onPageChanged.addRules([
-      {
-        conditions: [
-          new chrome.declarativeContent.PageStateMatcher({
-            pageUrl: { hostContains: ".google.com", schemes: ["https"] },
-          }),
-        ],
-        actions: [new chrome.declarativeContent.ShowPageAction()],
-      },
-    ]);
-  });
-});
-
 // for dom-parsing
 chrome.offscreen.createDocument({
   url: chrome.runtime.getURL("dom-parser.html"),

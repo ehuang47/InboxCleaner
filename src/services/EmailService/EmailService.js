@@ -24,8 +24,8 @@ export default class EmailService {
       let hasParsedThreadBefore = false;
 
       const { threadsTotal } = await this.emailDao.getUserProfile();
-      let maxThreads = 50, // 50 for testing, threadsTotal prod
-        maxResults = 25, // 25 for testing, 250 prod
+      let maxThreads = threadsTotal, // 50 for testing, threadsTotal prod
+        maxResults = 250, // 25 for testing, 250 prod
         numThreadsParsed = 0,
         pageToken = "",
         threadParsingOperations = [];

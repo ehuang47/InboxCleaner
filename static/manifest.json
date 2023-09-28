@@ -25,7 +25,6 @@
     "activeTab",
     "storage",
     "identity",
-    "declarativeContent",
     "scripting",
     "offscreen"
   ],
