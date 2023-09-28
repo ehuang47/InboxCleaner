@@ -54,12 +54,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
 
           const start = new Date().getTime();
-          await chrome.storage.local.set({ start });
 
           await EmailService.shared.syncAllThreads((threadCount) => {
             chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Synced ${threadCount} threads...` });
           });
           chrome.tabs.sendMessage(tab.id, { message: c.UPDATED_SUBSCRIBERS });
+
+          let elapsed = new Date().getTime() - start;
+          var mins = elapsed / 60000;
+          logger.shared.log({
+            message: mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec to sync all threads",
+          });
           break;
         }
         case c.RESET: {
@@ -69,10 +74,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
         case c.TRASH_SENDER_THREADS: {
+          let start = new Date().getTime();
+
           await EmailService.shared.trashAllSenderThreads(message.data, (threadCount, total) => {
             chrome.tabs.sendMessage(tab.id, { message: c.UPDATE_PROGRESS, data: `Moved ${threadCount}/${total} threads to Trash...` });
           });
           chrome.tabs.sendMessage(tab.id, { message: c.TRASH_SENDER_THREADS });
+
+          let elapsed = new Date().getTime() - start;
+          let mins = elapsed / 60000;
+          logger.shared.log({
+            message: mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec to trash all threads",
+          });
           break;
         }
         default:

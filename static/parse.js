@@ -18,7 +18,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       message: "parse-dom",
       unsubLink
     });
-  } else {
-    sendResponse();
   }
 });

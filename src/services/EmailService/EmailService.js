@@ -24,8 +24,8 @@ export default class EmailService {
       let hasParsedThreadBefore = false;
 
       const { threadsTotal } = await this.emailDao.getUserProfile();
-      let maxThreads = 50, // 50 for testing
-        maxResults = 25, // 250, 25 for testing
+      let maxThreads = 50, // 50 for testing, threadsTotal prod
+        maxResults = 25, // 25 for testing, 250 prod
         numThreadsParsed = 0,
         pageToken = "",
         threadParsingOperations = [];
@@ -70,9 +70,17 @@ export default class EmailService {
           data: threadList.threads,
           message: `parsed ${numThreadsParsed} threads`,
         });
-        sendProgress(numThreadsParsed,);
+        sendProgress(numThreadsParsed);
       }
-      await emailUtils.updateStoredThreads(storage);
+
+      this.logger.log({
+        data: storage.all_subs,
+        message: "updating storage with new subscriber list",
+      });
+      await chrome.storage.local.set({
+        ...storage,
+        [c.LAST_SYNCED]: new Date().getTime()
+      });
     } catch (e) {
       this.logger.log({
         message: e,
@@ -84,8 +92,6 @@ export default class EmailService {
 
   async trashAllSenderThreads(sender, sendProgress) {
     try {
-      let start = new Date().getTime();
-
       const storage = await emailUtils.getStoredThreads();
       const threadIdList = storage[c.ALL_SUBS][sender].threadIdList;
       let trashOps = [];
@@ -101,12 +107,6 @@ export default class EmailService {
         });
         sendProgress(i + 5, threadIdList.length);
       }
-
-      let elapsed = new Date().getTime() - start;
-      var mins = elapsed / 60000;
-      this.logger.log({
-        message: mins.toFixed(3) + " min, " + (elapsed / 1000 - mins * 60).toFixed(3) + " sec",
-      });
     } catch (e) {
       this.logger.log({
         message: e,
