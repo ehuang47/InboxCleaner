@@ -2,7 +2,7 @@
 name: Technical debt
 about: Explain the change.
 title: 'IC-#:'
-labels: code refactoring
+labels: debt
 assignees: ''
 
 ---
