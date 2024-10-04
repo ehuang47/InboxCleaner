@@ -33,3 +33,4 @@
 - [ ] I have added tests to cover my changes.
 - [ ] All new and existing tests passed locally.
 - [ ] Test coverage is at least 80%.
+- [ ] I have attached screenshots that prove the test-related checklist items.
